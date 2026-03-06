@@ -51,6 +51,7 @@ from anki.importing import AnkiPackageImporter
 from anki.notes import Note
 from anki.errors import NotFoundError
 from anki.scheduler.base import ScheduleCardsAsNew
+from anki.scheduler_pb2 import CardAnswer
 from aqt.qt import Qt, QTimer, QMessageBox, QCheckBox
 
 from .web import format_exception_reply, format_success_reply
@@ -1632,6 +1633,22 @@ class AnkiConnect:
                 success.append(False)
 
         return success
+
+
+    @util.api()
+    def gradeNow(self, cards, ease):
+        if ease < 1 or ease > 4:
+            raise Exception('ease must be between 1 and 4')
+
+        rating = {
+            1: CardAnswer.AGAIN,
+            2: CardAnswer.HARD,
+            3: CardAnswer.GOOD,
+            4: CardAnswer.EASY,
+        }[ease]
+
+        self.collection()._backend.grade_now(card_ids=cards, rating=rating)
+        return True
 
 
     @util.api()

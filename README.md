@@ -746,6 +746,36 @@ Documentation for currently supported actions is split up by category and is ref
     ```
     </details>
 
+#### `gradeNow`
+
+*   Grades cards immediately using the same rating scale as review answers. `ease` must be between 1 (Again) and 4 (Easy). Returns `true` when the operation succeeds.
+
+    <details>
+    <summary><i>Sample request:</i></summary>
+
+    ```json
+    {
+        "action": "gradeNow",
+        "version": 6,
+        "params": {
+            "cards": [1498938915662, 1502098034048],
+            "ease": 3
+        }
+    }
+    ```
+    </details>
+
+    <details>
+    <summary><i>Sample result:</i></summary>
+
+    ```json
+    {
+        "result": true,
+        "error": null
+    }
+    ```
+    </details>
+
 #### `setDueDate`
 
 *   Set Due Date. Turns cards into review cards if they are new, and makes them due on a certain date.

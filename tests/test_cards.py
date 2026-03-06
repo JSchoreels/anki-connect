@@ -91,3 +91,21 @@ class TestAnswerCards:
         ac.scheduler().reset()
         result = ac.answerCards([{"cardId": 123, "ease": 2}])
         assert result == [False]
+
+
+class TestGradeNow:
+    def test_gradeNow(self, setup):
+        reviews_before = ac.cardReviews(deck="test_deck", startID=0)
+        result = ac.gradeNow(cards=setup.card_ids[:2], ease=3)
+        assert result is True
+
+        reviews_after = ac.cardReviews(deck="test_deck", startID=0)
+        assert len(reviews_after) == len(reviews_before) + 2
+
+    def test_gradeNow_with_invalid_card_id(self, setup):
+        with pytest.raises(NotFoundError):
+            ac.gradeNow(cards=[123], ease=3)
+
+    def test_gradeNow_with_invalid_ease(self, setup):
+        with pytest.raises(Exception, match='ease must be between 1 and 4'):
+            ac.gradeNow(cards=setup.card_ids[:1], ease=5)
