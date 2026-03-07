@@ -1523,54 +1523,119 @@ class AnkiConnect:
 
 
     @util.api()
-    def findCards(self, query=None):
+    def findCards(self, query=None, fields=None):
         if query is None:
             return []
 
-        return list(map(int, self.collection().find_cards(query)))
+        card_ids = list(map(int, self.collection().find_cards(query)))
+        if fields is None:
+            return card_ids
+
+        if not isinstance(fields, list):
+            raise Exception('fields should be a list: {}'.format(fields))
+
+        for field in fields:
+            if field not in ['prop:r', 'prop:s']:
+                raise Exception('unsupported field requested: {}'.format(field))
+
+        result = []
+        for cid in card_ids:
+            card_result = {'cardId': cid}
+            if fields:
+                stats = self.collection().card_stats_data(cid)
+                for field in fields:
+                    if field == 'prop:r':
+                        card_result[field] = stats.fsrs_retrievability if stats.HasField('fsrs_retrievability') else None
+                    elif field == 'prop:s':
+                        card_result[field] = stats.memory_state.stability if stats.HasField('memory_state') else None
+            result.append(card_result)
+
+        return result
 
 
     @util.api()
-    def cardsInfo(self, cards):
+    def cardsInfo(self, cards, fields=None, noteFields=None, retrieved_info_mode='ALL'):
+        requested_fields = fields
+        if requested_fields is not None:
+            if not isinstance(requested_fields, list):
+                raise Exception('fields should be a list: {}'.format(requested_fields))
+
+            for field in requested_fields:
+                if field not in ['prop:r', 'prop:s', 'prop:d']:
+                    raise Exception('unsupported field requested: {}'.format(field))
+
+        requested_note_fields = noteFields
+        if requested_note_fields is not None and not isinstance(requested_note_fields, list):
+            raise Exception('noteFields should be a list: {}'.format(requested_note_fields))
+        requested_note_fields_set = set(requested_note_fields) if requested_note_fields is not None else None
+
+        if not isinstance(retrieved_info_mode, str):
+            raise Exception('retrieved_info_mode should be a string: {}'.format(retrieved_info_mode))
+        info_mode = retrieved_info_mode.upper()
+        if info_mode not in ['ALL', 'COMPACT', 'FIELDS_ONLY']:
+            raise Exception('invalid retrieved_info_mode: {}'.format(info_mode))
+
         result = []
         for cid in cards:
             try:
                 card = self.getCard(cid)
                 model = card.note_type()
                 note = card.note()
-                fields = {}
+                note_fields = {}
                 for info in model['flds']:
                     order = info['ord']
                     name = info['name']
-                    fields[name] = {'value': note.fields[order], 'order': order}
-                states = self.collection()._backend.get_scheduling_states(card.id)
-                nextReviews = self.collection()._backend.describe_next_states(states)
+                    if requested_note_fields_set is not None and name not in requested_note_fields_set:
+                        continue
+                    note_fields[name] = {'value': note.fields[order], 'order': order}
 
-                result.append({
+                card_result = {
                     'cardId': card.id,
-                    'fields': fields,
-                    'fieldOrder': card.ord,
-                    'question': util.cardQuestion(card),
-                    'answer': util.cardAnswer(card),
-                    'modelName': model['name'],
-                    'ord': card.ord,
-                    'deckName': self.deckNameFromId(card.did),
-                    'css': model['css'],
-                    'factor': card.factor,
-                    #This factor is 10 times the ease percentage,
-                    # so an ease of 310% would be reported as 3100
-                    'interval': card.ivl,
-                    'note': card.nid,
-                    'type': card.type,
-                    'queue': card.queue,
-                    'due': card.due,
-                    'reps': card.reps,
-                    'lapses': card.lapses,
-                    'left': card.left,
-                    'mod': card.mod,
-                    'nextReviews': list(nextReviews),
-                    'flags': card.flags,
-                })
+                    'fields': note_fields,
+                }
+
+                if info_mode != 'FIELDS_ONLY':
+                    card_result.update({
+                        'fieldOrder': card.ord,
+                        'ord': card.ord,
+                        'deckName': self.deckNameFromId(card.did),
+                        'factor': card.factor,
+                        #This factor is 10 times the ease percentage,
+                        # so an ease of 310% would be reported as 3100
+                        'interval': card.ivl,
+                        'note': card.nid,
+                        'type': card.type,
+                        'queue': card.queue,
+                        'due': card.due,
+                        'reps': card.reps,
+                        'lapses': card.lapses,
+                        'mod': card.mod,
+                        'flags': card.flags,
+                    })
+
+                if info_mode == 'ALL':
+                    states = self.collection()._backend.get_scheduling_states(card.id)
+                    nextReviews = self.collection()._backend.describe_next_states(states)
+                    card_result.update({
+                        'question': util.cardQuestion(card),
+                        'answer': util.cardAnswer(card),
+                        'modelName': model['name'],
+                        'css': model['css'],
+                        'left': card.left,
+                        'nextReviews': list(nextReviews),
+                    })
+
+                if requested_fields:
+                    stats = self.collection().card_stats_data(card.id)
+                    for field in requested_fields:
+                        if field == 'prop:r':
+                            card_result[field] = stats.fsrs_retrievability if stats.HasField('fsrs_retrievability') else None
+                        elif field == 'prop:s':
+                            card_result[field] = stats.memory_state.stability if stats.HasField('memory_state') else None
+                        elif field == 'prop:d':
+                            card_result[field] = stats.memory_state.difficulty if stats.HasField('memory_state') else None
+
+                result.append(card_result)
             except NotFoundError:
                 # Anki will give a NotFoundError if the card ID does not exist.
                 # Best behavior is probably to add an 'empty card' to the

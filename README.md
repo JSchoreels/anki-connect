@@ -482,6 +482,9 @@ Documentation for currently supported actions is split up by category and is ref
 
 *   Returns an array of card IDs for a given query. Functionally identical to `guiBrowse` but doesn't use the GUI for
     better performance.
+*   Optional: pass `fields` to include extra values with each card result. When `fields` is provided, the result is an
+    array of objects that always include `cardId` and the requested fields.
+    Currently supported field values are: `prop:r`, `prop:s`.
 
     <details>
     <summary><i>Sample request:</i></summary>
@@ -503,6 +506,43 @@ Documentation for currently supported actions is split up by category and is ref
     ```json
     {
         "result": [1494723142483, 1494703460437, 1494703479525],
+        "error": null
+    }
+    ```
+    </details>
+
+    <details>
+    <summary><i>Sample request with fields:</i></summary>
+
+    ```json
+    {
+        "action": "findCards",
+        "version": 6,
+        "params": {
+            "query": "deck:current",
+            "fields": ["prop:r", "prop:s"]
+        }
+    }
+    ```
+    </details>
+
+    <details>
+    <summary><i>Sample result with fields:</i></summary>
+
+    ```json
+    {
+        "result": [
+            {
+                "cardId": 1494723142483,
+                "prop:r": 0.89,
+                "prop:s": 12.4
+            },
+            {
+                "cardId": 1494703460437,
+                "prop:r": null,
+                "prop:s": null
+            }
+        ],
         "error": null
     }
     ```
@@ -578,6 +618,13 @@ Documentation for currently supported actions is split up by category and is ref
 
 *   Returns a list of objects containing for each card ID the card fields, front and back sides including CSS, note
     type, the note that the card belongs to, and deck name, last modification timestamp as well as ease and interval.
+*   Optional: pass `fields` to include extra values on each card object. Currently supported field values are:
+    `prop:r`, `prop:s`, `prop:d`.
+*   Optional: pass `noteFields` to only include selected note field names in the `fields` object.
+*   Optional: pass `retrieved_info_mode`, one of:
+    * `ALL` (default): full payload.
+    * `COMPACT`: omits heavy rendered fields (`question`, `answer`, `css`, `nextReviews`).
+    * `FIELDS_ONLY`: returns only `cardId`, `fields`, and requested metric fields (`prop:*`).
 
     <details>
     <summary><i>Sample request:</i></summary>
@@ -643,6 +690,91 @@ Documentation for currently supported actions is split up by category and is ref
                 "reps": 1,
                 "lapses": 0,
                 "left": 6
+            }
+        ],
+        "error": null
+    }
+    ```
+    </details>
+
+    <details>
+    <summary><i>Sample request with fields + noteFields + COMPACT mode:</i></summary>
+
+    ```json
+    {
+        "action": "cardsInfo",
+        "version": 6,
+        "params": {
+            "cards": [1498938915662, 1502098034048],
+            "noteFields": ["Front"],
+            "fields": ["prop:r"],
+            "retrieved_info_mode": "COMPACT"
+        }
+    }
+    ```
+    </details>
+
+    <details>
+    <summary><i>Sample result with fields + noteFields + COMPACT mode:</i></summary>
+
+    ```json
+    {
+        "result": [
+            {
+                "cardId": 1498938915662,
+                "deckName": "Default",
+                "note": 1502298033753,
+                "ord": 1,
+                "type": 0,
+                "queue": 0,
+                "due": 1,
+                "interval": 16,
+                "reps": 1,
+                "lapses": 0,
+                "mod": 1629454092,
+                "factor": 2500,
+                "flags": 0,
+                "fieldOrder": 1,
+                "fields": {
+                    "Front": {"value": "front content", "order": 0}
+                },
+                "prop:r": 0.89
+            }
+        ],
+        "error": null
+    }
+    ```
+    </details>
+
+    <details>
+    <summary><i>Sample request with FIELDS_ONLY mode:</i></summary>
+
+    ```json
+    {
+        "action": "cardsInfo",
+        "version": 6,
+        "params": {
+            "cards": [1498938915662, 1502098034048],
+            "noteFields": ["Front"],
+            "fields": ["prop:r"],
+            "retrieved_info_mode": "FIELDS_ONLY"
+        }
+    }
+    ```
+    </details>
+
+    <details>
+    <summary><i>Sample result with FIELDS_ONLY mode:</i></summary>
+
+    ```json
+    {
+        "result": [
+            {
+                "cardId": 1498938915662,
+                "fields": {
+                    "Front": {"value": "front content", "order": 0}
+                },
+                "prop:r": 0.89
             }
         ],
         "error": null

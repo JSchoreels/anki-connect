@@ -9,6 +9,18 @@ def test_findCards(setup):
     assert len(card_ids) == 4
 
 
+def test_findCards_with_fields(setup):
+    result = ac.findCards(query="deck:test_deck", fields=["prop:r", "prop:s"])
+
+    assert [item["cardId"] for item in result] == setup.card_ids
+    assert all("prop:r" in item and "prop:s" in item for item in result)
+
+
+def test_findCards_with_invalid_field(setup):
+    with pytest.raises(Exception, match="unsupported field requested"):
+        ac.findCards(query="deck:test_deck", fields=["prop:invalid"])
+
+
 class TestEaseFactors:
     def test_setEaseFactors(self, setup):
         result = ac.setEaseFactors(cards=setup.card_ids, easeFactors=[4200] * 4)
@@ -64,6 +76,57 @@ class TestCardInfo:
     def test_with_valid_ids(self, setup):
         result = ac.cardsInfo(cards=setup.card_ids)
         assert [item["cardId"] for item in result] == setup.card_ids
+        assert all("question" in item and "answer" in item and "nextReviews" in item for item in result)
+
+    def test_with_requested_props(self, setup):
+        result = ac.cardsInfo(cards=setup.card_ids, fields=["prop:r", "prop:s", "prop:d"])
+        assert [item["cardId"] for item in result] == setup.card_ids
+        assert all("prop:r" in item and "prop:s" in item and "prop:d" in item for item in result)
+
+    def test_with_retrieved_info_mode_compact(self, setup):
+        result = ac.cardsInfo(
+            cards=setup.card_ids,
+            fields=["prop:r"],
+            noteFields=["field1"],
+            retrieved_info_mode="COMPACT",
+        )
+        assert [item["cardId"] for item in result] == setup.card_ids
+        assert all("prop:r" in item for item in result)
+        assert all(set(item["fields"]) == {"field1"} for item in result)
+        assert all("question" not in item and "answer" not in item and "css" not in item and "nextReviews" not in item for item in result)
+        assert all("deckName" in item and "interval" in item for item in result)
+
+    def test_with_retrieved_info_mode_fields_only(self, setup):
+        result = ac.cardsInfo(
+            cards=setup.card_ids,
+            fields=["prop:r"],
+            noteFields=["field1"],
+            retrieved_info_mode="FIELDS_ONLY",
+        )
+        assert [item["cardId"] for item in result] == setup.card_ids
+        assert all(set(item) == {"cardId", "fields", "prop:r"} for item in result)
+        assert all(set(item["fields"]) == {"field1"} for item in result)
+
+    def test_with_retrieved_info_mode_all(self, setup):
+        result = ac.cardsInfo(cards=setup.card_ids, retrieved_info_mode="ALL")
+        assert [item["cardId"] for item in result] == setup.card_ids
+        assert all("question" in item and "answer" in item and "nextReviews" in item for item in result)
+
+    def test_with_invalid_requested_prop(self, setup):
+        with pytest.raises(Exception, match="unsupported field requested"):
+            ac.cardsInfo(cards=setup.card_ids, fields=["prop:x"])
+
+    def test_with_invalid_noteFields_type(self, setup):
+        with pytest.raises(Exception, match="noteFields should be a list"):
+            ac.cardsInfo(cards=setup.card_ids, noteFields="field1")
+
+    def test_with_invalid_retrieved_info_mode(self, setup):
+        with pytest.raises(Exception, match="invalid retrieved_info_mode"):
+            ac.cardsInfo(cards=setup.card_ids, retrieved_info_mode="SOMETHING")
+
+    def test_with_invalid_retrieved_info_mode_type(self, setup):
+        with pytest.raises(Exception, match="retrieved_info_mode should be a string"):
+            ac.cardsInfo(cards=setup.card_ids, retrieved_info_mode=123)
 
     def test_with_incorrect_id(self, setup):
         result = ac.cardsInfo(cards=[123])
