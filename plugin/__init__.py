@@ -1936,13 +1936,13 @@ class AnkiConnect:
         if 'deckName' in note:
             deck = collection.decks.by_name(note['deckName'])
             if deck is None:
-                raise Exception(f'Deck "{note['deckName']}" not found')
+                raise Exception(f'Deck "{note["deckName"]}" not found')
             addCards.set_deck(deck['id'])
         # Set model/note type
         if 'modelName' in note:
             model = collection.models.by_name(note['modelName'])
             if model is None:
-                raise Exception(f'Model "{note['modelName']}" not found')
+                raise Exception(f'Model "{note["modelName"]}" not found')
             addCards.set_note_type(model['id'])
         
         editorNote = addCards.editor.note
