@@ -18,10 +18,14 @@ import aqt
 required_anki_version = (23, 10, 0)
 VERSION_SUFFIXES = ["b", "rc"]
 
-version_string = aqt.appVersion
-for suffix in VERSION_SUFFIXES:
-    version_string = version_string.replace(suffix, ".")
-anki_version = tuple(int(segment) for segment in version_string.split(".") if segment)
+def _parse_anki_version(version_string):
+    version_string = version_string.split("+", 1)[0]
+    for suffix in VERSION_SUFFIXES:
+        version_string = version_string.replace(suffix, ".")
+    return tuple(int(segment) for segment in version_string.split(".") if segment)
+
+
+anki_version = _parse_anki_version(aqt.appVersion)
 
 # Append to tuple when versions have different number of segments (ie. 25.07 vs 25.07.0)
 anki_version += (0,) * (len(required_anki_version) - len(anki_version))
@@ -1523,31 +1527,78 @@ class AnkiConnect:
 
 
     @util.api()
-    def findCards(self, query=None, fields=None):
+    def findCards(self, query=None, fields=None, noteFields=None):
         if query is None:
             return []
 
         card_ids = list(map(int, self.collection().find_cards(query)))
-        if fields is None:
+        if fields is None and noteFields is None:
             return card_ids
 
-        if not isinstance(fields, list):
-            raise Exception('fields should be a list: {}'.format(fields))
+        return self.cardsDetails(card_ids, fields, noteFields)
 
-        for field in fields:
-            if field not in ['prop:r', 'prop:s']:
+
+    @util.api()
+    def cardsDetails(self, cards, fields=None, noteFields=None):
+        if cards is None:
+            return []
+        if not isinstance(cards, list):
+            raise Exception('cards should be a list: {}'.format(cards))
+        card_ids = list(map(int, cards))
+
+        requested_fields = fields
+        requested_note_fields = noteFields
+
+        if requested_fields is None and requested_note_fields is None:
+            return card_ids
+
+        if requested_fields is not None and not isinstance(requested_fields, list):
+            raise Exception('fields should be a list: {}'.format(requested_fields))
+
+        if requested_note_fields is not None and not isinstance(requested_note_fields, list):
+            raise Exception('noteFields should be a list: {}'.format(requested_note_fields))
+        requested_note_fields_set = set(requested_note_fields) if requested_note_fields is not None else None
+
+        for field in requested_fields or []:
+            if field not in ['prop:r', 'prop:s', 'prop:d', 'due', 'queue', 'type', 'interval', 'reps']:
                 raise Exception('unsupported field requested: {}'.format(field))
 
         result = []
         for cid in card_ids:
-            card_result = {'cardId': cid}
-            if fields:
+            card = self.getCard(cid)
+            card_result = {'cardId': card.id}
+
+            if requested_note_fields is not None:
+                note = card.note()
+                model = card.note_type()
+                note_fields = {}
+                for info in model['flds']:
+                    order = info['ord']
+                    name = info['name']
+                    if requested_note_fields_set is not None and name not in requested_note_fields_set:
+                        continue
+                    note_fields[name] = {'value': note.fields[order], 'order': order}
+                card_result['fields'] = note_fields
+
+            if requested_fields:
                 stats = self.collection().card_stats_data(cid)
-                for field in fields:
+                for field in requested_fields:
                     if field == 'prop:r':
                         card_result[field] = stats.fsrs_retrievability if stats.HasField('fsrs_retrievability') else None
                     elif field == 'prop:s':
                         card_result[field] = stats.memory_state.stability if stats.HasField('memory_state') else None
+                    elif field == 'prop:d':
+                        card_result[field] = stats.desired_retention if stats.HasField('desired_retention') else None
+                    elif field == 'due':
+                        card_result[field] = card.due
+                    elif field == 'queue':
+                        card_result[field] = card.queue
+                    elif field == 'type':
+                        card_result[field] = card.type
+                    elif field == 'interval':
+                        card_result[field] = card.ivl
+                    elif field == 'reps':
+                        card_result[field] = card.reps
             result.append(card_result)
 
         return result
@@ -1746,6 +1797,65 @@ class AnkiConnect:
             result[card] = [dict(zip(COLUMNS[1:], review)) for review in cid_to_reviews.get(card, [])]
 
         return result
+
+
+    @util.api()
+    def repositionNewCards(self, orderedCardIds, startPosition, step, shift):
+        if not isinstance(orderedCardIds, list) or len(orderedCardIds) == 0:
+            raise Exception('orderedCardIds should be a non-empty list: {}'.format(orderedCardIds))
+        if not all(isinstance(card_id, int) and not isinstance(card_id, bool) for card_id in orderedCardIds):
+            raise Exception('orderedCardIds should contain only integers: {}'.format(orderedCardIds))
+        if not isinstance(startPosition, int) or isinstance(startPosition, bool) or startPosition < 1:
+            raise Exception('startPosition should be an integer >= 1: {}'.format(startPosition))
+        if not isinstance(step, int) or isinstance(step, bool) or step < 1:
+            raise Exception('step should be an integer >= 1: {}'.format(step))
+        if not isinstance(shift, bool):
+            raise Exception('shift should be a boolean: {}'.format(shift))
+
+        deduped_card_ids = []
+        seen_card_ids = set()
+        for card_id in orderedCardIds:
+            if card_id in seen_card_ids:
+                continue
+            seen_card_ids.add(card_id)
+            deduped_card_ids.append(card_id)
+
+        eligible_new_cards = []
+        skipped_not_found = []
+        skipped_not_new = []
+
+        for card_id in deduped_card_ids:
+            try:
+                self.getCard(card_id)
+            except NotFoundError:
+                skipped_not_found.append(card_id)
+                continue
+
+            if self.findCards('cid:{} is:new'.format(card_id)):
+                eligible_new_cards.append(card_id)
+            else:
+                skipped_not_new.append(card_id)
+
+        if len(eligible_new_cards) > 0:
+            self.collection()._backend.sort_cards(
+                card_ids=eligible_new_cards,
+                starting_from=startPosition,
+                step_size=step,
+                randomize=False,
+                shift_existing=shift,
+            )
+
+        return {
+            'requested': len(orderedCardIds),
+            'deduped': len(deduped_card_ids),
+            'eligibleNew': len(eligible_new_cards),
+            'repositioned': len(eligible_new_cards),
+            'skippedNotFound': skipped_not_found,
+            'skippedNotNew': skipped_not_new,
+            'appliedStartPosition': startPosition,
+            'appliedStep': step,
+            'appliedShift': shift,
+        }
 
 
     @util.api()

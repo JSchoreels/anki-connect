@@ -941,6 +941,52 @@ Documentation for currently supported actions is split up by category and is ref
     ```
     </details>
 
+#### `repositionNewCards`
+
+*   Repositions eligible new cards using Anki native reposition logic while preserving caller order.
+*   `orderedCardIds` must be a non-empty list of integers.
+*   Duplicates are removed by card ID only (first occurrence kept).
+*   Cards that do not exist are reported in `skippedNotFound`.
+*   Cards that exist but are not currently `is:new` are reported in `skippedNotNew`.
+
+    <details>
+    <summary><i>Sample request:</i></summary>
+
+    ```json
+    {
+        "action": "repositionNewCards",
+        "version": 6,
+        "params": {
+            "orderedCardIds": [175, 311, 800, 311, 901],
+            "startPosition": 1,
+            "step": 1,
+            "shift": true
+        }
+    }
+    ```
+    </details>
+
+    <details>
+    <summary><i>Sample result:</i></summary>
+
+    ```json
+    {
+        "result": {
+            "requested": 5,
+            "deduped": 4,
+            "eligibleNew": 3,
+            "repositioned": 3,
+            "skippedNotFound": [901],
+            "skippedNotNew": [800],
+            "appliedStartPosition": 1,
+            "appliedStep": 1,
+            "appliedShift": true
+        },
+        "error": null
+    }
+    ```
+    </details>
+
 ---
 
 ### Deck Actions

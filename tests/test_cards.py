@@ -16,9 +16,58 @@ def test_findCards_with_fields(setup):
     assert all("prop:r" in item and "prop:s" in item for item in result)
 
 
+def test_findCards_with_noteFields(setup):
+    result = ac.findCards(query="deck:test_deck", noteFields=["field1"])
+
+    assert [item["cardId"] for item in result] == setup.card_ids
+    assert all(set(item.keys()) == {"cardId", "fields"} for item in result)
+    assert all(set(item["fields"]) == {"field1"} for item in result)
+
+
+def test_cardsDetails_with_cards_param(setup):
+    target_cards = setup.card_ids[:2]
+    result = ac.cardsDetails(cards=target_cards, fields=["prop:r"], noteFields=["field1"])
+
+    assert [item["cardId"] for item in result] == target_cards
+    assert all("prop:r" in item for item in result)
+    assert all(set(item["fields"]) == {"field1"} for item in result)
+
+
+def test_cardsDetails_with_invalid_cards_type(setup):
+    with pytest.raises(Exception, match="cards should be a list"):
+        ac.cardsDetails(cards="123")
+
+
+def test_findCards_with_extended_fields_and_noteFields(setup):
+    result = ac.findCards(
+        query="deck:test_deck",
+        fields=["prop:r", "prop:s", "prop:d", "due", "queue", "type", "interval", "reps"],
+        noteFields=["field1"],
+    )
+
+    assert [item["cardId"] for item in result] == setup.card_ids
+    assert all(set(item["fields"]) == {"field1"} for item in result)
+    assert all(
+        "prop:r" in item
+        and "prop:s" in item
+        and "prop:d" in item
+        and "due" in item
+        and "queue" in item
+        and "type" in item
+        and "interval" in item
+        and "reps" in item
+        for item in result
+    )
+
+
 def test_findCards_with_invalid_field(setup):
     with pytest.raises(Exception, match="unsupported field requested"):
         ac.findCards(query="deck:test_deck", fields=["prop:invalid"])
+
+
+def test_findCards_with_invalid_noteFields_type(setup):
+    with pytest.raises(Exception, match="noteFields should be a list"):
+        ac.findCards(query="deck:test_deck", noteFields="field1")
 
 
 class TestEaseFactors:
@@ -139,6 +188,102 @@ def test_forgetCards(setup):
 
 def test_relearnCards(setup):
     ac.relearnCards(cards=setup.card_ids)
+
+
+class TestRepositionNewCards:
+    def test_order_preserved_and_duplicate_card_id_deduped(self, setup):
+        target = [setup.card_ids[2], setup.card_ids[0], setup.card_ids[2], setup.card_ids[1]]
+        result = ac.repositionNewCards(
+            orderedCardIds=target,
+            startPosition=1,
+            step=1,
+            shift=True,
+        )
+
+        assert result == {
+            "requested": 4,
+            "deduped": 3,
+            "eligibleNew": 3,
+            "repositioned": 3,
+            "skippedNotFound": [],
+            "skippedNotNew": [],
+            "appliedStartPosition": 1,
+            "appliedStep": 1,
+            "appliedShift": True,
+        }
+        assert ac.getCard(setup.card_ids[2]).due == 1
+        assert ac.getCard(setup.card_ids[0]).due == 2
+        assert ac.getCard(setup.card_ids[1]).due == 3
+
+    def test_distinct_cards_from_same_token_both_kept(self, setup):
+        same_note_cards = setup.note1_card_ids
+        assert len(same_note_cards) == 2
+
+        result = ac.repositionNewCards(
+            orderedCardIds=same_note_cards,
+            startPosition=1,
+            step=1,
+            shift=True,
+        )
+
+        assert result["deduped"] == 2
+        assert result["eligibleNew"] == 2
+        assert result["repositioned"] == 2
+        assert ac.getCard(same_note_cards[0]).due == 1
+        assert ac.getCard(same_note_cards[1]).due == 2
+
+    def test_non_new_cards_skipped(self, setup):
+        not_new_card = setup.card_ids[0]
+        new_card = setup.card_ids[1]
+        ac.setDueDate(cards=[not_new_card], days="1")
+
+        result = ac.repositionNewCards(
+            orderedCardIds=[not_new_card, new_card],
+            startPosition=1,
+            step=1,
+            shift=True,
+        )
+
+        assert result["requested"] == 2
+        assert result["deduped"] == 2
+        assert result["eligibleNew"] == 1
+        assert result["repositioned"] == 1
+        assert result["skippedNotFound"] == []
+        assert result["skippedNotNew"] == [not_new_card]
+
+    def test_shift_true_preserves_relative_order_of_untouched_cards(self, setup):
+        selected = [setup.card_ids[2], setup.card_ids[0]]
+        untouched = [card_id for card_id in setup.card_ids if card_id not in selected]
+
+        before_due = {card_id: ac.getCard(card_id).due for card_id in setup.card_ids}
+        before_untouched_order = sorted(untouched, key=lambda card_id: before_due[card_id])
+
+        result = ac.repositionNewCards(
+            orderedCardIds=selected,
+            startPosition=1,
+            step=1,
+            shift=True,
+        )
+        assert result["repositioned"] == 2
+
+        after_due = {card_id: ac.getCard(card_id).due for card_id in setup.card_ids}
+        after_untouched_order = sorted(untouched, key=lambda card_id: after_due[card_id])
+
+        assert after_untouched_order == before_untouched_order
+        assert ac.getCard(selected[0]).due == 1
+        assert ac.getCard(selected[1]).due == 2
+
+    def test_invalid_params_return_explicit_errors(self, setup):
+        with pytest.raises(Exception, match="orderedCardIds should be a non-empty list"):
+            ac.repositionNewCards(orderedCardIds=[], startPosition=1, step=1, shift=True)
+        with pytest.raises(Exception, match="orderedCardIds should contain only integers"):
+            ac.repositionNewCards(orderedCardIds=[setup.card_ids[0], "x"], startPosition=1, step=1, shift=True)
+        with pytest.raises(Exception, match="startPosition should be an integer >= 1"):
+            ac.repositionNewCards(orderedCardIds=[setup.card_ids[0]], startPosition=0, step=1, shift=True)
+        with pytest.raises(Exception, match="step should be an integer >= 1"):
+            ac.repositionNewCards(orderedCardIds=[setup.card_ids[0]], startPosition=1, step=0, shift=True)
+        with pytest.raises(Exception, match="shift should be a boolean"):
+            ac.repositionNewCards(orderedCardIds=[setup.card_ids[0]], startPosition=1, step=1, shift=1)
 
 
 class TestAnswerCards:

@@ -3,9 +3,14 @@ import os
 import aqt
 import pytest
 
+from plugin import _parse_anki_version
 from conftest import ac, anki_connect_config_loaded, \
     set_up_test_deck_and_test_model_and_two_notes, \
     current_decks_and_models_etc_preserved, wait
+
+
+def test_parse_anki_version_ignores_build_metadata():
+    assert _parse_anki_version("25.09.4+fsrs7") == (25, 9, 4)
 
 
 # version is retrieved from config
