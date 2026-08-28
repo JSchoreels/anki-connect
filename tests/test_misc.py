@@ -1,9 +1,11 @@
 import os
+from unittest.mock import Mock
 
 import aqt
+import plugin
 import pytest
 
-from plugin import _parse_anki_version
+from plugin import AnkiConnect, _parse_anki_version
 from conftest import ac, anki_connect_config_loaded, \
     set_up_test_deck_and_test_model_and_two_notes, \
     current_decks_and_models_etc_preserved, wait
@@ -11,6 +13,60 @@ from conftest import ac, anki_connect_config_loaded, \
 
 def test_parse_anki_version_ignores_build_metadata():
     assert _parse_anki_version("25.09.4+fsrs7") == (25, 9, 4)
+
+
+def test_export_package_uses_collection_api():
+    collection = Mock()
+    collection.decks.by_name.return_value = {"id": 123}
+    anki_connect = AnkiConnect.__new__(AnkiConnect)
+    anki_connect.collection = Mock(return_value=collection)
+
+    assert anki_connect.exportPackage(
+        deck="test_deck", path="/tmp/export.apkg", includeSched=True
+    )
+
+    kwargs = collection.export_anki_package.call_args.kwargs
+    assert kwargs["out_path"] == "/tmp/export.apkg"
+    assert kwargs["limit"].deck_id == 123
+    assert kwargs["options"].with_scheduling
+    assert kwargs["options"].with_deck_configs
+    assert kwargs["options"].with_media
+    assert kwargs["options"].legacy
+
+
+def test_export_package_uses_pre_2312_collection_signature(monkeypatch):
+    monkeypatch.setattr(plugin, "anki_version", (23, 10, 0))
+    collection = Mock()
+    collection.decks.by_name.return_value = {"id": 123}
+    anki_connect = AnkiConnect.__new__(AnkiConnect)
+    anki_connect.collection = Mock(return_value=collection)
+
+    assert anki_connect.exportPackage(
+        deck="test_deck", path="/tmp/export.apkg", includeSched=True
+    )
+
+    kwargs = collection.export_anki_package.call_args.kwargs
+    assert kwargs["out_path"] == "/tmp/export.apkg"
+    assert kwargs["limit"].deck_id == 123
+    assert kwargs["with_scheduling"]
+    assert kwargs["with_media"]
+    assert kwargs["legacy_support"]
+    assert "options" not in kwargs
+
+
+def test_import_package_uses_collection_api():
+    collection = Mock()
+    anki_connect = AnkiConnect.__new__(AnkiConnect)
+    anki_connect.collection = Mock(return_value=collection)
+    anki_connect.startEditing = Mock()
+
+    assert anki_connect.importPackage(path="/tmp/import.apkg")
+
+    anki_connect.startEditing.assert_called_once_with()
+    request = collection.import_anki_package.call_args.args[0]
+    assert request.package_path == "/tmp/import.apkg"
+    assert request.options.with_scheduling
+    assert request.options.with_deck_configs
 
 
 # version is retrieved from config

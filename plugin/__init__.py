@@ -46,17 +46,19 @@ import time
 import unicodedata
 
 import anki
-import anki.exporting
 import anki.storage
 from anki.cards import Card
+from anki.collection import DeckIdLimit, ImportAnkiPackageRequest
 from anki.consts import MODEL_CLOZE
-from anki.exporting import AnkiPackageExporter
-from anki.importing import AnkiPackageImporter
+from anki.import_export_pb2 import ImportAnkiPackageOptions
 from anki.notes import Note
 from anki.errors import NotFoundError
 from anki.scheduler.base import ScheduleCardsAsNew
 from anki.scheduler_pb2 import CardAnswer
 from aqt.qt import Qt, QTimer, QMessageBox, QCheckBox
+
+if anki_version >= (23, 12, 0):
+    from anki.collection import ExportAnkiPackageOptions
 
 from .web import format_exception_reply, format_success_reply
 from .edit import Edit
@@ -2365,10 +2367,26 @@ class AnkiConnect:
         if collection is not None:
             deck = collection.decks.by_name(deck)
             if deck is not None:
-                exporter = AnkiPackageExporter(collection)
-                exporter.did = deck['id']
-                exporter.includeSched = includeSched
-                exporter.exportInto(path)
+                limit = DeckIdLimit(deck_id=deck['id'])
+                if anki_version < (23, 12, 0):
+                    collection.export_anki_package(
+                        out_path=path,
+                        limit=limit,
+                        with_scheduling=includeSched,
+                        with_media=True,
+                        legacy_support=True,
+                    )
+                else:
+                    collection.export_anki_package(
+                        out_path=path,
+                        limit=limit,
+                        options=ExportAnkiPackageOptions(
+                            with_scheduling=includeSched,
+                            with_deck_configs=includeSched,
+                            with_media=True,
+                            legacy=True,
+                        ),
+                    )
                 return True
 
         return False
@@ -2380,8 +2398,12 @@ class AnkiConnect:
         if collection is not None:
             try:
                 self.startEditing()
-                importer = AnkiPackageImporter(collection, path)
-                importer.run()
+                options = ImportAnkiPackageOptions(with_scheduling=True)
+                if anki_version >= (23, 12, 0):
+                    options.with_deck_configs = True
+                collection.import_anki_package(
+                    ImportAnkiPackageRequest(package_path=path, options=options)
+                )
             except:
                 raise
             else:
