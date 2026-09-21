@@ -1,0 +1,41 @@
+         1183874 function calls in 0.700 seconds
+
+   Ordered by: cumulative time
+   List reduced from 49 to 35 due to restriction <35>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.001    0.001    0.700    0.700 /Users/jschoreels/workspace/anki-connect/benchmarks/profile_reader.py:140(fetch)
+        5    0.063    0.013    0.699    0.140 plugin/__init__.py:1543(cardsDetails)
+    23472    0.005    0.000    0.459    0.000 /Users/jschoreels/workspace/anki/pylib/anki/cards.py:175(note)
+    11736    0.005    0.000    0.455    0.000 /Users/jschoreels/workspace/anki/pylib/anki/collection.py:660(get_note)
+    11736    0.008    0.000    0.449    0.000 /Users/jschoreels/workspace/anki/pylib/anki/notes.py:36(__init__)
+    11736    0.006    0.000    0.437    0.000 /Users/jschoreels/workspace/anki/pylib/anki/notes.py:55(load)
+    23477    0.020    0.000    0.247    0.000 /Users/jschoreels/workspace/anki/pylib/anki/_backend.py:159(_run_command)
+    11736    0.013    0.000    0.222    0.000 /Users/jschoreels/workspace/anki/out/pylib/anki/_backend_generated.py:1838(get_note)
+    23477    0.214    0.000    0.214    0.000 {method 'command' of '_rsbridge.Backend' objects}
+    11736    0.085    0.000    0.208    0.000 /Users/jschoreels/workspace/anki/pylib/anki/notes.py:60(_load_from_backend_note)
+    11736    0.005    0.000    0.127    0.000 plugin/__init__.py:375(getCard)
+    11736    0.004    0.000    0.121    0.000 /Users/jschoreels/workspace/anki/pylib/anki/collection.py:645(get_card)
+    11736    0.005    0.000    0.118    0.000 /Users/jschoreels/workspace/anki/pylib/anki/cards.py:54(__init__)
+    11736    0.013    0.000    0.111    0.000 /Users/jschoreels/workspace/anki/pylib/anki/models.py:280(field_map)
+    11736    0.006    0.000    0.109    0.000 /Users/jschoreels/workspace/anki/pylib/anki/cards.py:73(load)
+    11741    0.038    0.000    0.094    0.000 {built-in method builtins.all}
+    11736    0.013    0.000    0.068    0.000 /Users/jschoreels/workspace/anki/out/pylib/anki/_backend_generated.py:294(get_card)
+   422496    0.055    0.000    0.055    0.000 /Users/jschoreels/workspace/anki/pylib/anki/models.py:287(<genexpr>)
+    11736    0.030    0.000    0.035    0.000 /Users/jschoreels/workspace/anki/pylib/anki/cards.py:78(_load_from_backend_card)
+    23477    0.033    0.000    0.033    0.000 {method 'ParseFromString' of 'google._upb._message.Message' objects}
+        5    0.002    0.000    0.025    0.005 plugin/__init__.py:1612(_cardMetrics)
+        5    0.000    0.000    0.020    0.004 /Users/jschoreels/workspace/anki/pylib/anki/collection.py:1215(card_memory_metrics)
+        5    0.000    0.000    0.020    0.004 /Users/jschoreels/workspace/anki/out/pylib/anki/_backend_generated.py:2544(card_memory_metrics)
+    23472    0.008    0.000    0.018    0.000 /Users/jschoreels/workspace/anki/pylib/anki/models.py:159(get)
+    11736    0.004    0.000    0.014    0.000 /Users/jschoreels/workspace/anki/pylib/anki/cards.py:180(note_type)
+    11736    0.003    0.000    0.013    0.000 /Users/jschoreels/workspace/anki/pylib/anki/notes.py:140(note_type)
+    92284    0.009    0.000    0.009    0.000 {method 'HasField' of 'google._upb._message.Message' objects}
+    11736    0.004    0.000    0.008    0.000 plugin/__init__.py:1628(_cardStatsForFields)
+    23472    0.005    0.000    0.008    0.000 /Users/jschoreels/workspace/anki/pylib/anki/models.py:116(_get_cached)
+    23477    0.005    0.000    0.007    0.000 /Users/jschoreels/.local/share/uv/python/cpython-3.13.13-macos-aarch64-none/lib/python3.13/threading.py:1430(current_thread)
+    23472    0.004    0.000    0.006    0.000 /Users/jschoreels/workspace/anki/pylib/anki/collection.py:331(weakref)
+    46944    0.006    0.000    0.006    0.000 {method 'get' of 'dict' objects}
+    46954    0.005    0.000    0.005    0.000 {built-in method time.time}
+    23477    0.005    0.000    0.005    0.000 {method 'SerializeToString' of 'google._upb._message.Message' objects}
+    35228    0.004    0.000    0.004    0.000 {built-in method builtins.isinstance}

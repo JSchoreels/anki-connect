@@ -1565,6 +1565,12 @@ class AnkiConnect:
             if field not in ['prop:r', 'prop:s', 'prop:d', 'due', 'queue', 'type', 'interval', 'reps']:
                 raise Exception('unsupported field requested: {}'.format(field))
 
+        batched_result = self._cardsDetailsBatch(card_ids, requested_fields, requested_note_fields)
+        if batched_result is not None:
+            return batched_result
+
+        needs_stats = any(field in ['prop:r', 'prop:s', 'prop:d'] for field in requested_fields or [])
+        metrics = self._cardMetrics(card_ids, requested_fields)
         result = []
         for cid in card_ids:
             card = self.getCard(cid)
@@ -1583,14 +1589,15 @@ class AnkiConnect:
                 card_result['fields'] = note_fields
 
             if requested_fields:
-                stats = self.collection().card_stats_data(cid)
+                if needs_stats:
+                    stats = self._cardStatsForFields(card, metrics)
                 for field in requested_fields:
                     if field == 'prop:r':
                         card_result[field] = stats.fsrs_retrievability if stats.HasField('fsrs_retrievability') else None
                     elif field == 'prop:s':
                         card_result[field] = stats.memory_state.stability if stats.HasField('memory_state') else None
                     elif field == 'prop:d':
-                        card_result[field] = stats.desired_retention if stats.HasField('desired_retention') else None
+                        card_result[field] = stats.memory_state.difficulty if stats.HasField('memory_state') else None
                     elif field == 'due':
                         card_result[field] = card.due
                     elif field == 'queue':
@@ -1604,6 +1611,74 @@ class AnkiConnect:
             result.append(card_result)
 
         return result
+
+
+    def _cardsDetailsBatch(self, cards, fields, note_fields):
+        if not cards:
+            return []
+        if not all(-(2 ** 63) <= cid < 2 ** 63 for cid in cards):
+            return None
+        get_details = getattr(self.collection(), 'card_details', None)
+        if get_details is None:
+            return None
+        needs_stats = any(field in ['prop:r', 'prop:s', 'prop:d'] for field in fields or [])
+        # Non-string names historically match no note fields; keep that behavior.
+        selected_names = [name for name in note_fields if isinstance(name, str)] if note_fields is not None else None
+        entries = {entry.card_id: entry for entry in get_details(
+            list(dict.fromkeys(cards)), include_memory_state=needs_stats,
+            include_retrievability='prop:r' in (fields or []), note_fields=selected_names
+        )}
+        # Preserve the legacy error order and missing-state initialization path.
+        if any(cid not in entries or
+               (note_fields is not None and not entries[cid].HasField('note_fields')) or
+               (needs_stats and entries[cid].ctype != 0 and
+                not entries[cid].metrics.HasField('memory_state')) for cid in cards):
+            return None
+
+        result = []
+        for cid in cards:
+            entry = entries[cid]
+            row = {'cardId': cid}
+            if note_fields is not None:
+                row['fields'] = {field.name: {'value': field.value, 'order': field.order}
+                                 for field in entry.note_fields.fields}
+            values = {'due': entry.due, 'queue': entry.queue, 'type': entry.ctype,
+                      'interval': entry.interval, 'reps': entry.reps}
+            if needs_stats:
+                stats = entry.metrics
+                values.update({
+                    'prop:r': stats.fsrs_retrievability if stats.HasField('fsrs_retrievability') else None,
+                    'prop:s': stats.memory_state.stability if stats.HasField('memory_state') else None,
+                    'prop:d': stats.memory_state.difficulty if stats.HasField('memory_state') else None,
+                })
+            row.update((field, values[field]) for field in fields or [])
+            result.append(row)
+        return result
+
+
+    def _cardMetrics(self, cards, fields):
+        if not fields or not any(field in ['prop:r', 'prop:s', 'prop:d'] for field in fields):
+            return {}
+        # Leave unusual inputs to the original per-card validation/error path.
+        if not isinstance(cards, list) or not cards or not all(
+            type(cid) is int and -(2 ** 63) <= cid < 2 ** 63 for cid in cards
+        ):
+            return {}
+        get_metrics = getattr(self.collection(), 'card_memory_metrics', None)
+        if get_metrics is None:
+            return {}
+        return {item.card_id: item for item in get_metrics(
+            list(dict.fromkeys(cards)), include_retrievability='prop:r' in fields
+        )}
+
+
+    def _cardStatsForFields(self, card, metrics):
+        stats = metrics.get(card.id)
+        # Full stats initializes missing state on reviewed cards in newer Anki.
+        # Retain that behavior and the legacy path on builds without batch metrics.
+        if stats is None or (card.type != 0 and not stats.HasField('memory_state')):
+            return self.collection().card_stats_data(card.id)
+        return stats
 
 
     @util.api()
@@ -1628,6 +1703,7 @@ class AnkiConnect:
         if info_mode not in ['ALL', 'COMPACT', 'FIELDS_ONLY']:
             raise Exception('invalid retrieved_info_mode: {}'.format(info_mode))
 
+        metrics = self._cardMetrics(cards, requested_fields)
         result = []
         for cid in cards:
             try:
@@ -1679,7 +1755,7 @@ class AnkiConnect:
                     })
 
                 if requested_fields:
-                    stats = self.collection().card_stats_data(card.id)
+                    stats = self._cardStatsForFields(card, metrics)
                     for field in requested_fields:
                         if field == 'prop:r':
                             card_result[field] = stats.fsrs_retrievability if stats.HasField('fsrs_retrievability') else None
@@ -1765,7 +1841,16 @@ class AnkiConnect:
             4: CardAnswer.EASY,
         }[ease]
 
-        self.collection()._backend.grade_now(card_ids=cards, rating=rating)
+        grade_now = self.collection()._backend.grade_now
+        grade_now_params = {
+            'card_ids': cards,
+            'rating': rating,
+        }
+
+        if 'card_options' in inspect.signature(grade_now).parameters:
+            grade_now_params['card_options'] = []
+
+        grade_now(**grade_now_params)
         return True
 
 

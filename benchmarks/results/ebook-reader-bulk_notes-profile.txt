@@ -1,0 +1,41 @@
+         587177 function calls in 2.142 seconds
+
+   Ordered by: cumulative time
+   List reduced from 48 to 35 due to restriction <35>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.001    0.001    2.142    2.142 benchmarks/profile_reader.py:124(fetch)
+        5    0.077    0.015    2.140    0.428 benchmark_prefetched_details:1543(cardsDetails)
+    23472    0.024    0.000    1.736    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/_backend.py:159(_run_command)
+    11736    0.005    0.000    1.718    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/collection.py:1206(card_stats_data)
+    11736    0.020    0.000    1.712    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/_backend_generated.py:2494(card_stats)
+    23472    1.696    0.000    1.696    0.000 {method 'command' of '_rsbridge.Backend' objects}
+    11736    0.006    0.000    0.163    0.000 plugin/__init__.py:375(getCard)
+    11736    0.005    0.000    0.157    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/collection.py:645(get_card)
+    11736    0.006    0.000    0.152    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/cards.py:54(__init__)
+        5    0.011    0.002    0.151    0.030 benchmarks/profile_reader.py:25(prefetch_notes)
+    11736    0.007    0.000    0.142    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/cards.py:73(load)
+       28    0.000    0.000    0.131    0.005 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/dbproxy.py:71(all)
+       28    0.000    0.000    0.131    0.005 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/dbproxy.py:57(_query)
+       28    0.000    0.000    0.131    0.005 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/_backend.py:97(db_query)
+       28    0.000    0.000    0.131    0.005 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/_backend.py:116(_db_command)
+       28    0.128    0.005    0.128    0.005 {method 'db_command' of '_rsbridge.Backend' objects}
+    11736    0.017    0.000    0.093    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/_backend_generated.py:294(get_card)
+    11736    0.036    0.000    0.041    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/cards.py:78(_load_from_backend_card)
+    11736    0.011    0.000    0.026    0.000 benchmarks/profile_reader.py:63(prefetched_note_and_model)
+    23472    0.026    0.000    0.026    0.000 {method 'ParseFromString' of 'google._upb._message.Message' objects}
+    11741    0.005    0.000    0.012    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/models.py:159(get)
+    82152    0.009    0.000    0.009    0.000 {method 'HasField' of 'google._upb._message.Message' objects}
+    23472    0.006    0.000    0.009    0.000 /Users/jschoreels/.local/share/uv/python/cpython-3.13.13-macos-aarch64-none/lib/python3.13/threading.py:1430(current_thread)
+    23472    0.006    0.000    0.006    0.000 {method 'SerializeToString' of 'google._upb._message.Message' objects}
+    23477    0.006    0.000    0.006    0.000 {method 'get' of 'dict' objects}
+    46944    0.006    0.000    0.006    0.000 {built-in method time.time}
+    11741    0.003    0.000    0.004    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/models.py:116(_get_cached)
+    11736    0.003    0.000    0.004    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/collection.py:331(weakref)
+       33    0.002    0.000    0.004    0.000 {method 'join' of 'str' objects}
+    23472    0.003    0.000    0.003    0.000 {method 'append' of 'list' objects}
+    23472    0.002    0.000    0.002    0.000 {built-in method _thread.get_ident}
+    11756    0.002    0.000    0.002    0.000 {built-in method builtins.isinstance}
+       28    0.002    0.000    0.002    0.000 {orjson.loads}
+        5    0.001    0.000    0.002    0.000 {built-in method builtins.any}
+    23472    0.002    0.000    0.002    0.000 /Users/jschoreels/.local/share/uv/python/cpython-3.13.13-macos-aarch64-none/lib/python3.13/threading.py:1546(main_thread)

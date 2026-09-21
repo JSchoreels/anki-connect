@@ -1,0 +1,1256 @@
+{
+  "anki_version": "26.09b3+fsrs7",
+  "anki_buildhash": "bb9ff481",
+  "cards": 11736,
+  "samples_ms": {
+    "legacy": [
+      1914.6468330000062,
+      1933.8978750020033,
+      1917.9100839974126,
+      1940.2444169973023,
+      1917.2959580027964,
+      1950.7997500040801,
+      1913.4905000100844
+    ],
+    "native": [
+      484.1116670140764,
+      483.48900000564754,
+      489.3274170026416,
+      511.93441699433606,
+      497.9310000053374,
+      486.22229100146797,
+      487.44258300575893
+    ],
+    "native_bulk_notes": [
+      268.5019589989679,
+      274.9962499947287,
+      279.01429099438246,
+      262.4713749974035,
+      266.2964579940308,
+      261.3510410010349,
+      272.44095799687784
+    ]
+  },
+  "medians_ms": {
+    "legacy": 1917.9100839974126,
+    "native": 487.44258300575893,
+    "native_bulk_notes": 268.5019589989679
+  },
+  "stable_payload_hashes": {
+    "legacy": "9375359be7355f2c34bc4aa0eee69833a70521e2cfd724a3347cb093e3e491b8",
+    "native": "9375359be7355f2c34bc4aa0eee69833a70521e2cfd724a3347cb093e3e491b8",
+    "native_bulk_notes": "9375359be7355f2c34bc4aa0eee69833a70521e2cfd724a3347cb093e3e491b8"
+  },
+  "max_retrievability_time_drift": 3.6656856536865234e-05,
+  "json_median_ms": 17.634874995565042,
+  "response_bytes": 2663838,
+  "profiles": {
+    "legacy": {
+      "total_seconds": 2.2414898329999997,
+      "functions": [
+        {
+          "file": "/Users/jschoreels/workspace/anki-connect/benchmarks/profile_reader.py",
+          "line": 140,
+          "name": "fetch",
+          "calls": 1,
+          "self_seconds": 0.000441625,
+          "cumulative_seconds": 2.241468375
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki-connect/benchmarks/profile_reader.py",
+          "line": 133,
+          "name": "<lambda>",
+          "calls": 23472,
+          "self_seconds": 0.0014568510000000001,
+          "cumulative_seconds": 0.0014568510000000001
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki-connect/benchmarks/profile_reader.py",
+          "line": 134,
+          "name": "<lambda>",
+          "calls": 5,
+          "self_seconds": 5.000000000000001e-07,
+          "cumulative_seconds": 5.000000000000001e-07
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<method 'HasField' of 'google._upb._message.Message' objects>",
+          "calls": 82152,
+          "self_seconds": 0.008675233000000001,
+          "cumulative_seconds": 0.008675233000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<method 'ParseFromString' of 'google._upb._message.Message' objects>",
+          "calls": 35208,
+          "self_seconds": 0.056810032,
+          "cumulative_seconds": 0.056810032
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<method 'SerializeToString' of 'google._upb._message.Message' objects>",
+          "calls": 35208,
+          "self_seconds": 0.007649288000000001,
+          "cumulative_seconds": 0.007649288000000001
+        },
+        {
+          "file": "/Users/jschoreels/.local/share/uv/python/cpython-3.13.13-macos-aarch64-none/lib/python3.13/threading.py",
+          "line": 1430,
+          "name": "current_thread",
+          "calls": 35208,
+          "self_seconds": 0.007841711000000001,
+          "cumulative_seconds": 0.010936682000000001
+        },
+        {
+          "file": "/Users/jschoreels/.local/share/uv/python/cpython-3.13.13-macos-aarch64-none/lib/python3.13/threading.py",
+          "line": 1546,
+          "name": "main_thread",
+          "calls": 35208,
+          "self_seconds": 0.0023648790000000003,
+          "cumulative_seconds": 0.0023648790000000003
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/models.py",
+          "line": 159,
+          "name": "get",
+          "calls": 23472,
+          "self_seconds": 0.008502656,
+          "cumulative_seconds": 0.019214898
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<method 'append' of 'list' objects>",
+          "calls": 11736,
+          "self_seconds": 0.0015983750000000002,
+          "cumulative_seconds": 0.0015983750000000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<method 'get' of 'dict' objects>",
+          "calls": 46944,
+          "self_seconds": 0.005652506000000001,
+          "cumulative_seconds": 0.005652506000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<method 'copy' of 'dict' objects>",
+          "calls": 11736,
+          "self_seconds": 0.0029475950000000003,
+          "cumulative_seconds": 0.0029475950000000003
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<built-in method builtins.all>",
+          "calls": 11736,
+          "self_seconds": 0.039147299,
+          "cumulative_seconds": 0.095880199
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<built-in method builtins.any>",
+          "calls": 5,
+          "self_seconds": 2.8340000000000003e-06,
+          "cumulative_seconds": 3.9180000000000004e-06
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<built-in method builtins.isinstance>",
+          "calls": 35223,
+          "self_seconds": 0.004169666000000001,
+          "cumulative_seconds": 0.004169666000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<built-in method builtins.len>",
+          "calls": 23472,
+          "self_seconds": 0.0019178770000000001,
+          "cumulative_seconds": 0.0019178770000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<method 'disable' of '_lsprof.Profiler' objects>",
+          "calls": 1,
+          "self_seconds": 2.1458e-05,
+          "cumulative_seconds": 2.1458e-05
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<built-in method _thread.get_ident>",
+          "calls": 35208,
+          "self_seconds": 0.003094971,
+          "cumulative_seconds": 0.003094971
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<built-in method time.time>",
+          "calls": 70416,
+          "self_seconds": 0.007190026,
+          "cumulative_seconds": 0.007190026
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<built-in method _weakref.proxy>",
+          "calls": 23472,
+          "self_seconds": 0.002470887,
+          "cumulative_seconds": 0.002470887
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/collection.py",
+          "line": 660,
+          "name": "get_note",
+          "calls": 11736,
+          "self_seconds": 0.005771958000000001,
+          "cumulative_seconds": 0.492756495
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/collection.py",
+          "line": 645,
+          "name": "get_card",
+          "calls": 11736,
+          "self_seconds": 0.0045141090000000005,
+          "cumulative_seconds": 0.128748717
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/collection.py",
+          "line": 331,
+          "name": "weakref",
+          "calls": 23472,
+          "self_seconds": 0.0047889180000000005,
+          "cumulative_seconds": 0.007259805
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/collection.py",
+          "line": 1206,
+          "name": "card_stats_data",
+          "calls": 11736,
+          "self_seconds": 0.004642696,
+          "cumulative_seconds": 1.511830301
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/cards.py",
+          "line": 73,
+          "name": "load",
+          "calls": 11736,
+          "self_seconds": 0.006687493,
+          "cumulative_seconds": 0.11501320400000001
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/cards.py",
+          "line": 54,
+          "name": "__init__",
+          "calls": 11736,
+          "self_seconds": 0.005467935,
+          "cumulative_seconds": 0.12423460800000001
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/cards.py",
+          "line": 180,
+          "name": "note_type",
+          "calls": 11736,
+          "self_seconds": 0.0045288740000000004,
+          "cumulative_seconds": 0.014492721
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/cards.py",
+          "line": 175,
+          "name": "note",
+          "calls": 23472,
+          "self_seconds": 0.005347862,
+          "cumulative_seconds": 0.49810435700000005
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/models.py",
+          "line": 287,
+          "name": "<genexpr>",
+          "calls": 422496,
+          "self_seconds": 0.0567329,
+          "cumulative_seconds": 0.0567329
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/notes.py",
+          "line": 55,
+          "name": "load",
+          "calls": 11736,
+          "self_seconds": 0.006559477,
+          "cumulative_seconds": 0.47286351400000004
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/models.py",
+          "line": 116,
+          "name": "_get_cached",
+          "calls": 23472,
+          "self_seconds": 0.005234287000000001,
+          "cumulative_seconds": 0.00816325
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/notes.py",
+          "line": 140,
+          "name": "note_type",
+          "calls": 11736,
+          "self_seconds": 0.003173037,
+          "cumulative_seconds": 0.013513999
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/out/pylib/anki/_backend_generated.py",
+          "line": 294,
+          "name": "get_card",
+          "calls": 11736,
+          "self_seconds": 0.013312185,
+          "cumulative_seconds": 0.07029036500000001
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/out/pylib/anki/_backend_generated.py",
+          "line": 2494,
+          "name": "card_stats",
+          "calls": 11736,
+          "self_seconds": 0.015314093,
+          "cumulative_seconds": 1.5071876050000002
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/out/pylib/anki/_backend_generated.py",
+          "line": 1838,
+          "name": "get_note",
+          "calls": 11736,
+          "self_seconds": 0.01325216,
+          "cumulative_seconds": 0.243924085
+        },
+        {
+          "file": "plugin/__init__.py",
+          "line": 1568,
+          "name": "<genexpr>",
+          "calls": 10,
+          "self_seconds": 6.959000000000001e-06,
+          "cumulative_seconds": 6.959000000000001e-06
+        },
+        {
+          "file": "plugin/__init__.py",
+          "line": 1628,
+          "name": "_cardStatsForFields",
+          "calls": 11736,
+          "self_seconds": 0.0071386620000000005,
+          "cumulative_seconds": 1.5211313290000001
+        },
+        {
+          "file": "plugin/__init__.py",
+          "line": 375,
+          "name": "getCard",
+          "calls": 11736,
+          "self_seconds": 0.005048522000000001,
+          "cumulative_seconds": 0.13449355300000002
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/cards.py",
+          "line": 78,
+          "name": "_load_from_backend_card",
+          "calls": 11736,
+          "self_seconds": 0.03235358,
+          "cumulative_seconds": 0.038035346000000005
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/_backend.py",
+          "line": 159,
+          "name": "_run_command",
+          "calls": 35208,
+          "self_seconds": 0.030759275000000003,
+          "cumulative_seconds": 1.715064297
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<method 'command' of '_rsbridge.Backend' objects>",
+          "calls": 35208,
+          "self_seconds": 1.663813435,
+          "cumulative_seconds": 1.663813435
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/notes.py",
+          "line": 36,
+          "name": "__init__",
+          "calls": 11736,
+          "self_seconds": 0.00899547,
+          "cumulative_seconds": 0.48698453700000005
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/notes.py",
+          "line": 60,
+          "name": "_load_from_backend_note",
+          "calls": 11736,
+          "self_seconds": 0.0928389,
+          "cumulative_seconds": 0.22237995200000002
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/models.py",
+          "line": 280,
+          "name": "field_map",
+          "calls": 11736,
+          "self_seconds": 0.013959668000000001,
+          "cumulative_seconds": 0.116027053
+        },
+        {
+          "file": "plugin/__init__.py",
+          "line": 1543,
+          "name": "cardsDetails",
+          "calls": 5,
+          "self_seconds": 0.069291109,
+          "cumulative_seconds": 2.24102675
+        }
+      ]
+    },
+    "native": {
+      "total_seconds": 0.6995722910000002,
+      "functions": [
+        {
+          "file": "/Users/jschoreels/workspace/anki-connect/benchmarks/profile_reader.py",
+          "line": 140,
+          "name": "fetch",
+          "calls": 1,
+          "self_seconds": 0.0007799160000000001,
+          "cumulative_seconds": 0.6995532080000001
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki-connect/benchmarks/profile_reader.py",
+          "line": 127,
+          "name": "<lambda>",
+          "calls": 11741,
+          "self_seconds": 0.000682747,
+          "cumulative_seconds": 0.000682747
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<method 'HasField' of 'google._upb._message.Message' objects>",
+          "calls": 92284,
+          "self_seconds": 0.009244084000000001,
+          "cumulative_seconds": 0.009244084000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<method 'ParseFromString' of 'google._upb._message.Message' objects>",
+          "calls": 23477,
+          "self_seconds": 0.033284658,
+          "cumulative_seconds": 0.033284658
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<method 'SerializeToString' of 'google._upb._message.Message' objects>",
+          "calls": 23477,
+          "self_seconds": 0.00460357,
+          "cumulative_seconds": 0.00460357
+        },
+        {
+          "file": "/Users/jschoreels/.local/share/uv/python/cpython-3.13.13-macos-aarch64-none/lib/python3.13/threading.py",
+          "line": 1430,
+          "name": "current_thread",
+          "calls": 23477,
+          "self_seconds": 0.005029109,
+          "cumulative_seconds": 0.006988867
+        },
+        {
+          "file": "/Users/jschoreels/.local/share/uv/python/cpython-3.13.13-macos-aarch64-none/lib/python3.13/threading.py",
+          "line": 1546,
+          "name": "main_thread",
+          "calls": 23477,
+          "self_seconds": 0.001636127,
+          "cumulative_seconds": 0.001636127
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/models.py",
+          "line": 159,
+          "name": "get",
+          "calls": 23472,
+          "self_seconds": 0.008253236,
+          "cumulative_seconds": 0.018277816000000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<method 'append' of 'list' objects>",
+          "calls": 11736,
+          "self_seconds": 0.001359348,
+          "cumulative_seconds": 0.001359348
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<method 'get' of 'dict' objects>",
+          "calls": 46944,
+          "self_seconds": 0.006154886,
+          "cumulative_seconds": 0.006154886
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<built-in method fromkeys>",
+          "calls": 5,
+          "self_seconds": 0.00030871,
+          "cumulative_seconds": 0.00030871
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<method 'copy' of 'dict' objects>",
+          "calls": 11736,
+          "self_seconds": 0.00255652,
+          "cumulative_seconds": 0.00255652
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<built-in method builtins.all>",
+          "calls": 11741,
+          "self_seconds": 0.037764558000000004,
+          "cumulative_seconds": 0.094019513
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<built-in method builtins.any>",
+          "calls": 10,
+          "self_seconds": 4.334e-06,
+          "cumulative_seconds": 5.959e-06
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<built-in method builtins.getattr>",
+          "calls": 5,
+          "self_seconds": 4.459e-06,
+          "cumulative_seconds": 4.459e-06
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<built-in method builtins.isinstance>",
+          "calls": 35228,
+          "self_seconds": 0.003728148,
+          "cumulative_seconds": 0.003728148
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<built-in method builtins.len>",
+          "calls": 23472,
+          "self_seconds": 0.0018174500000000002,
+          "cumulative_seconds": 0.0018174500000000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<method 'disable' of '_lsprof.Profiler' objects>",
+          "calls": 1,
+          "self_seconds": 1.9083e-05,
+          "cumulative_seconds": 1.9083e-05
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<built-in method _thread.get_ident>",
+          "calls": 23477,
+          "self_seconds": 0.0019597580000000002,
+          "cumulative_seconds": 0.0019597580000000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<built-in method time.time>",
+          "calls": 46954,
+          "self_seconds": 0.004696192,
+          "cumulative_seconds": 0.004696192
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<built-in method _weakref.proxy>",
+          "calls": 23472,
+          "self_seconds": 0.002012705,
+          "cumulative_seconds": 0.002012705
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/collection.py",
+          "line": 660,
+          "name": "get_note",
+          "calls": 11736,
+          "self_seconds": 0.005265753000000001,
+          "cumulative_seconds": 0.454509671
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/collection.py",
+          "line": 645,
+          "name": "get_card",
+          "calls": 11736,
+          "self_seconds": 0.0039005290000000002,
+          "cumulative_seconds": 0.121468324
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/collection.py",
+          "line": 331,
+          "name": "weakref",
+          "calls": 23472,
+          "self_seconds": 0.0043301500000000005,
+          "cumulative_seconds": 0.0063428550000000005
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/collection.py",
+          "line": 1215,
+          "name": "card_memory_metrics",
+          "calls": 5,
+          "self_seconds": 7.875e-06,
+          "cumulative_seconds": 0.019954874
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/cards.py",
+          "line": 73,
+          "name": "load",
+          "calls": 11736,
+          "self_seconds": 0.0057981000000000005,
+          "cumulative_seconds": 0.10891874700000001
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/cards.py",
+          "line": 54,
+          "name": "__init__",
+          "calls": 11736,
+          "self_seconds": 0.005385644,
+          "cumulative_seconds": 0.117567795
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/cards.py",
+          "line": 180,
+          "name": "note_type",
+          "calls": 11736,
+          "self_seconds": 0.004483698,
+          "cumulative_seconds": 0.014149148
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/cards.py",
+          "line": 175,
+          "name": "note",
+          "calls": 23472,
+          "self_seconds": 0.004713005,
+          "cumulative_seconds": 0.45922267600000005
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/models.py",
+          "line": 287,
+          "name": "<genexpr>",
+          "calls": 422496,
+          "self_seconds": 0.054820123000000005,
+          "cumulative_seconds": 0.054820123000000005
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/notes.py",
+          "line": 55,
+          "name": "load",
+          "calls": 11736,
+          "self_seconds": 0.00632754,
+          "cumulative_seconds": 0.436708362
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/models.py",
+          "line": 116,
+          "name": "_get_cached",
+          "calls": 23472,
+          "self_seconds": 0.004985284,
+          "cumulative_seconds": 0.0076242720000000005
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/notes.py",
+          "line": 140,
+          "name": "note_type",
+          "calls": 11736,
+          "self_seconds": 0.003037704,
+          "cumulative_seconds": 0.012679998000000001
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/out/pylib/anki/_backend_generated.py",
+          "line": 294,
+          "name": "get_card",
+          "calls": 11736,
+          "self_seconds": 0.012563694,
+          "cumulative_seconds": 0.067960132
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/out/pylib/anki/_backend_generated.py",
+          "line": 2544,
+          "name": "card_memory_metrics",
+          "calls": 5,
+          "self_seconds": 0.000244458,
+          "cumulative_seconds": 0.019946999
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/out/pylib/anki/_backend_generated.py",
+          "line": 1838,
+          "name": "get_note",
+          "calls": 11736,
+          "self_seconds": 0.012792771000000001,
+          "cumulative_seconds": 0.22230616
+        },
+        {
+          "file": "plugin/__init__.py",
+          "line": 1568,
+          "name": "<genexpr>",
+          "calls": 10,
+          "self_seconds": 7.248000000000001e-06,
+          "cumulative_seconds": 7.248000000000001e-06
+        },
+        {
+          "file": "plugin/__init__.py",
+          "line": 1613,
+          "name": "<genexpr>",
+          "calls": 10,
+          "self_seconds": 1.669e-06,
+          "cumulative_seconds": 1.669e-06
+        },
+        {
+          "file": "plugin/__init__.py",
+          "line": 1628,
+          "name": "_cardStatsForFields",
+          "calls": 11736,
+          "self_seconds": 0.00435006,
+          "cumulative_seconds": 0.00793276
+        },
+        {
+          "file": "plugin/__init__.py",
+          "line": 1616,
+          "name": "<genexpr>",
+          "calls": 11741,
+          "self_seconds": 0.001434832,
+          "cumulative_seconds": 0.001434832
+        },
+        {
+          "file": "plugin/__init__.py",
+          "line": 375,
+          "name": "getCard",
+          "calls": 11736,
+          "self_seconds": 0.004801769,
+          "cumulative_seconds": 0.126952383
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/cards.py",
+          "line": 78,
+          "name": "_load_from_backend_card",
+          "calls": 11736,
+          "self_seconds": 0.029662291,
+          "cumulative_seconds": 0.035160515
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/_backend.py",
+          "line": 159,
+          "name": "_run_command",
+          "calls": 23477,
+          "self_seconds": 0.019676361,
+          "cumulative_seconds": 0.24672414
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<method 'command' of '_rsbridge.Backend' objects>",
+          "calls": 23477,
+          "self_seconds": 0.21372659300000002,
+          "cumulative_seconds": 0.21372659300000002
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/notes.py",
+          "line": 36,
+          "name": "__init__",
+          "calls": 11736,
+          "self_seconds": 0.008130017,
+          "cumulative_seconds": 0.449243918
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/notes.py",
+          "line": 60,
+          "name": "_load_from_backend_note",
+          "calls": 11736,
+          "self_seconds": 0.084652658,
+          "cumulative_seconds": 0.20807466200000002
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/models.py",
+          "line": 280,
+          "name": "field_map",
+          "calls": 11736,
+          "self_seconds": 0.013490650000000002,
+          "cumulative_seconds": 0.110742006
+        },
+        {
+          "file": "plugin/__init__.py",
+          "line": 1612,
+          "name": "_cardMetrics",
+          "calls": 5,
+          "self_seconds": 0.002018957,
+          "cumulative_seconds": 0.024638916
+        },
+        {
+          "file": "plugin/__init__.py",
+          "line": 1543,
+          "name": "cardsDetails",
+          "calls": 5,
+          "self_seconds": 0.06306326000000001,
+          "cumulative_seconds": 0.698773292
+        }
+      ]
+    },
+    "native_bulk_notes": {
+      "total_seconds": 0.378292542,
+      "functions": [
+        {
+          "file": "/Users/jschoreels/workspace/anki-connect/benchmarks/profile_reader.py",
+          "line": 66,
+          "name": "prefetched_note_and_model",
+          "calls": 11736,
+          "self_seconds": 0.007734615,
+          "cumulative_seconds": 0.021910931
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki-connect/benchmarks/profile_reader.py",
+          "line": 140,
+          "name": "fetch",
+          "calls": 1,
+          "self_seconds": 0.001396791,
+          "cumulative_seconds": 0.37827408300000004
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki-connect/benchmarks/profile_reader.py",
+          "line": 52,
+          "name": "<genexpr>",
+          "calls": 15,
+          "self_seconds": 2.0000000000000003e-06,
+          "cumulative_seconds": 2.0000000000000003e-06
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki-connect/benchmarks/profile_reader.py",
+          "line": 32,
+          "name": "<genexpr>",
+          "calls": 11750,
+          "self_seconds": 0.000606704,
+          "cumulative_seconds": 0.000606704
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki-connect/benchmarks/profile_reader.py",
+          "line": 54,
+          "name": "<genexpr>",
+          "calls": 11750,
+          "self_seconds": 0.000604134,
+          "cumulative_seconds": 0.000604134
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki-connect/benchmarks/profile_reader.py",
+          "line": 28,
+          "name": "<genexpr>",
+          "calls": 11741,
+          "self_seconds": 0.000729943,
+          "cumulative_seconds": 0.000729943
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki-connect/benchmarks/profile_reader.py",
+          "line": 127,
+          "name": "<lambda>",
+          "calls": 11746,
+          "self_seconds": 0.000635803,
+          "cumulative_seconds": 0.000635803
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<method 'HasField' of 'google._upb._message.Message' objects>",
+          "calls": 92284,
+          "self_seconds": 0.008525742000000001,
+          "cumulative_seconds": 0.008525742000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<method 'ParseFromString' of 'google._upb._message.Message' objects>",
+          "calls": 11741,
+          "self_seconds": 0.0034644600000000004,
+          "cumulative_seconds": 0.0034644600000000004
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<method 'SerializeToString' of 'google._upb._message.Message' objects>",
+          "calls": 11741,
+          "self_seconds": 0.002217811,
+          "cumulative_seconds": 0.002217811
+        },
+        {
+          "file": "/Users/jschoreels/.local/share/uv/python/cpython-3.13.13-macos-aarch64-none/lib/python3.13/threading.py",
+          "line": 1430,
+          "name": "current_thread",
+          "calls": 11741,
+          "self_seconds": 0.002428614,
+          "cumulative_seconds": 0.0033506340000000003
+        },
+        {
+          "file": "/Users/jschoreels/.local/share/uv/python/cpython-3.13.13-macos-aarch64-none/lib/python3.13/threading.py",
+          "line": 1546,
+          "name": "main_thread",
+          "calls": 11741,
+          "self_seconds": 0.000796397,
+          "cumulative_seconds": 0.000796397
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/_backend.py",
+          "line": 116,
+          "name": "_db_command",
+          "calls": 28,
+          "self_seconds": 0.00017896600000000002,
+          "cumulative_seconds": 0.12408500400000001
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/models.py",
+          "line": 159,
+          "name": "get",
+          "calls": 11741,
+          "self_seconds": 0.004033865,
+          "cumulative_seconds": 0.00907438
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<method 'append' of 'list' objects>",
+          "calls": 23472,
+          "self_seconds": 0.002263471,
+          "cumulative_seconds": 0.002263471
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<method 'get' of 'dict' objects>",
+          "calls": 35213,
+          "self_seconds": 0.008464662000000001,
+          "cumulative_seconds": 0.008464662000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<method 'setdefault' of 'dict' objects>",
+          "calls": 11736,
+          "self_seconds": 0.0010843740000000001,
+          "cumulative_seconds": 0.0010843740000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<method 'items' of 'dict' objects>",
+          "calls": 10,
+          "self_seconds": 2.167e-06,
+          "cumulative_seconds": 2.167e-06
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<built-in method fromkeys>",
+          "calls": 10,
+          "self_seconds": 0.000634083,
+          "cumulative_seconds": 0.000634083
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<method 'join' of 'str' objects>",
+          "calls": 33,
+          "self_seconds": 0.002117119,
+          "cumulative_seconds": 0.003329957
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<built-in method builtins.all>",
+          "calls": 5,
+          "self_seconds": 0.0009222880000000001,
+          "cumulative_seconds": 0.002352917
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<built-in method builtins.any>",
+          "calls": 15,
+          "self_seconds": 0.0009175160000000001,
+          "cumulative_seconds": 0.001649581
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<built-in method builtins.getattr>",
+          "calls": 5,
+          "self_seconds": 6.542e-06,
+          "cumulative_seconds": 6.542e-06
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<built-in method builtins.isinstance>",
+          "calls": 11761,
+          "self_seconds": 0.001281081,
+          "cumulative_seconds": 0.001281081
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<built-in method builtins.len>",
+          "calls": 11746,
+          "self_seconds": 0.0006606110000000001,
+          "cumulative_seconds": 0.0006606110000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<method 'disable' of '_lsprof.Profiler' objects>",
+          "calls": 1,
+          "self_seconds": 1.8459e-05,
+          "cumulative_seconds": 1.8459e-05
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<built-in method _thread.get_ident>",
+          "calls": 11741,
+          "self_seconds": 0.0009220200000000001,
+          "cumulative_seconds": 0.0009220200000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<built-in method time.time>",
+          "calls": 23482,
+          "self_seconds": 0.0022908580000000002,
+          "cumulative_seconds": 0.0022908580000000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<built-in method _weakref.proxy>",
+          "calls": 11736,
+          "self_seconds": 0.000950236,
+          "cumulative_seconds": 0.000950236
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/collection.py",
+          "line": 645,
+          "name": "get_card",
+          "calls": 11736,
+          "self_seconds": 0.003402874,
+          "cumulative_seconds": 0.108212554
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/collection.py",
+          "line": 331,
+          "name": "weakref",
+          "calls": 11736,
+          "self_seconds": 0.002057686,
+          "cumulative_seconds": 0.003007922
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/collection.py",
+          "line": 1215,
+          "name": "card_memory_metrics",
+          "calls": 5,
+          "self_seconds": 1.0208000000000001e-05,
+          "cumulative_seconds": 0.020437707000000003
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/cards.py",
+          "line": 73,
+          "name": "load",
+          "calls": 11736,
+          "self_seconds": 0.005362455,
+          "cumulative_seconds": 0.09698765200000001
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/cards.py",
+          "line": 54,
+          "name": "__init__",
+          "calls": 11736,
+          "self_seconds": 0.004814106,
+          "cumulative_seconds": 0.10480968
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/dbproxy.py",
+          "line": 109,
+          "name": "emulate_named_args",
+          "calls": 28,
+          "self_seconds": 4.959e-06,
+          "cumulative_seconds": 4.959e-06
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<orjson.dumps>",
+          "calls": 28,
+          "self_seconds": 0.00037183,
+          "cumulative_seconds": 0.00037183
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<orjson.loads>",
+          "calls": 28,
+          "self_seconds": 0.0018318750000000002,
+          "cumulative_seconds": 0.0018318750000000002
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/dbproxy.py",
+          "line": 71,
+          "name": "all",
+          "calls": 28,
+          "self_seconds": 0.000254545,
+          "cumulative_seconds": 0.124438086
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/models.py",
+          "line": 116,
+          "name": "_get_cached",
+          "calls": 11741,
+          "self_seconds": 0.002498204,
+          "cumulative_seconds": 0.003761518
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/_backend.py",
+          "line": 97,
+          "name": "db_query",
+          "calls": 28,
+          "self_seconds": 4.7369e-05,
+          "cumulative_seconds": 0.124132373
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/dbproxy.py",
+          "line": 57,
+          "name": "_query",
+          "calls": 28,
+          "self_seconds": 4.6209000000000004e-05,
+          "cumulative_seconds": 0.12418354100000001
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/out/pylib/anki/_backend_generated.py",
+          "line": 294,
+          "name": "get_card",
+          "calls": 11736,
+          "self_seconds": 0.012093792,
+          "cumulative_seconds": 0.058350566000000006
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/out/pylib/anki/_backend_generated.py",
+          "line": 2544,
+          "name": "card_memory_metrics",
+          "calls": 5,
+          "self_seconds": 0.000259335,
+          "cumulative_seconds": 0.020427499000000002
+        },
+        {
+          "file": "benchmark_prefetched_details",
+          "line": 1568,
+          "name": "<genexpr>",
+          "calls": 10,
+          "self_seconds": 7.083000000000001e-06,
+          "cumulative_seconds": 7.083000000000001e-06
+        },
+        {
+          "file": "plugin/__init__.py",
+          "line": 1613,
+          "name": "<genexpr>",
+          "calls": 10,
+          "self_seconds": 2.165e-06,
+          "cumulative_seconds": 2.165e-06
+        },
+        {
+          "file": "plugin/__init__.py",
+          "line": 1628,
+          "name": "_cardStatsForFields",
+          "calls": 11736,
+          "self_seconds": 0.003969775,
+          "cumulative_seconds": 0.007117481
+        },
+        {
+          "file": "plugin/__init__.py",
+          "line": 1616,
+          "name": "<genexpr>",
+          "calls": 11741,
+          "self_seconds": 0.001430629,
+          "cumulative_seconds": 0.001430629
+        },
+        {
+          "file": "plugin/__init__.py",
+          "line": 375,
+          "name": "getCard",
+          "calls": 11736,
+          "self_seconds": 0.004124,
+          "cumulative_seconds": 0.11297114700000001
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/cards.py",
+          "line": 78,
+          "name": "_load_from_backend_card",
+          "calls": 11736,
+          "self_seconds": 0.028035735000000003,
+          "cumulative_seconds": 0.033274631
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki/pylib/anki/_backend.py",
+          "line": 159,
+          "name": "_run_command",
+          "calls": 11741,
+          "self_seconds": 0.008957878,
+          "cumulative_seconds": 0.06074266700000001
+        },
+        {
+          "file": "/Users/jschoreels/workspace/anki-connect/benchmarks/profile_reader.py",
+          "line": 26,
+          "name": "prefetch_notes",
+          "calls": 5,
+          "self_seconds": 0.011522601,
+          "cumulative_seconds": 0.143915292
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<method 'command' of '_rsbridge.Backend' objects>",
+          "calls": 11741,
+          "self_seconds": 0.0453469,
+          "cumulative_seconds": 0.0453469
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "name": "<method 'db_command' of '_rsbridge.Backend' objects>",
+          "calls": 28,
+          "self_seconds": 0.12170233300000001,
+          "cumulative_seconds": 0.12170233300000001
+        },
+        {
+          "file": "plugin/__init__.py",
+          "line": 1612,
+          "name": "_cardMetrics",
+          "calls": 5,
+          "self_seconds": 0.008388289,
+          "cumulative_seconds": 0.031517956
+        },
+        {
+          "file": "benchmark_prefetched_details",
+          "line": 1543,
+          "name": "cardsDetails",
+          "calls": 5,
+          "self_seconds": 0.055858375,
+          "cumulative_seconds": 0.37687729200000003
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,41 @@
+         1279246 function calls in 2.566 seconds
+
+   Ordered by: cumulative time
+   List reduced from 41 to 35 due to restriction <35>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    2.566    2.566 benchmarks/profile_reader.py:124(fetch)
+        5    0.084    0.017    2.566    0.513 plugin/__init__.py:1543(cardsDetails)
+    35208    0.036    0.000    1.969    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/_backend.py:159(_run_command)
+    35208    1.909    0.000    1.909    0.000 {method 'command' of '_rsbridge.Backend' objects}
+    11736    0.006    0.000    1.729    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/collection.py:1206(card_stats_data)
+    11736    0.020    0.000    1.723    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/_backend_generated.py:2494(card_stats)
+    23472    0.006    0.000    0.561    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/cards.py:175(note)
+    11736    0.007    0.000    0.555    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/collection.py:660(get_note)
+    11736    0.010    0.000    0.548    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/notes.py:36(__init__)
+    11736    0.008    0.000    0.533    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/notes.py:55(load)
+    11736    0.016    0.000    0.272    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/_backend_generated.py:1838(get_note)
+    11736    0.110    0.000    0.252    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/notes.py:60(_load_from_backend_note)
+    11736    0.006    0.000    0.172    0.000 plugin/__init__.py:375(getCard)
+    11736    0.006    0.000    0.165    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/collection.py:645(get_card)
+    11736    0.006    0.000    0.159    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/cards.py:54(__init__)
+    11736    0.008    0.000    0.148    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/cards.py:73(load)
+    11736    0.016    0.000    0.127    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/models.py:280(field_map)
+    11736    0.041    0.000    0.103    0.000 {built-in method builtins.all}
+    11736    0.017    0.000    0.097    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/_backend_generated.py:294(get_card)
+   422496    0.062    0.000    0.062    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/models.py:287(<genexpr>)
+    35208    0.062    0.000    0.062    0.000 {method 'ParseFromString' of 'google._upb._message.Message' objects}
+    11736    0.037    0.000    0.043    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/cards.py:78(_load_from_backend_card)
+    23472    0.009    0.000    0.021    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/models.py:159(get)
+    11736    0.005    0.000    0.015    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/cards.py:180(note_type)
+    11736    0.004    0.000    0.015    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/notes.py:140(note_type)
+    35208    0.010    0.000    0.013    0.000 /Users/jschoreels/.local/share/uv/python/cpython-3.13.13-macos-aarch64-none/lib/python3.13/threading.py:1430(current_thread)
+    82152    0.010    0.000    0.010    0.000 {method 'HasField' of 'google._upb._message.Message' objects}
+    35208    0.009    0.000    0.009    0.000 {method 'SerializeToString' of 'google._upb._message.Message' objects}
+    23472    0.006    0.000    0.009    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/models.py:116(_get_cached)
+    70416    0.008    0.000    0.008    0.000 {built-in method time.time}
+    23472    0.005    0.000    0.008    0.000 /Users/runner/work/anki/anki/out/installer/build/anki/macos/app/Anki.app/Contents/Resources/app_packages/anki/collection.py:331(weakref)
+    35208    0.005    0.000    0.005    0.000 {method 'get' of 'dict' objects}
+    35223    0.005    0.000    0.005    0.000 {built-in method builtins.isinstance}
+    11736    0.004    0.000    0.004    0.000 {method 'copy' of 'dict' objects}
+    35208    0.003    0.000    0.003    0.000 {built-in method _thread.get_ident}

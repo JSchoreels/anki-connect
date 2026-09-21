@@ -38,6 +38,20 @@ def test_cardsDetails_with_invalid_cards_type(setup):
         ac.cardsDetails(cards="123")
 
 
+@pytest.mark.parametrize('endpoint', ['cardsDetails', 'cardsInfo', 'findCards'])
+def test_current_difficulty_is_consistent(setup, endpoint):
+    from anki.cards import FSRSMemoryState
+
+    cid = setup.card_ids[0]
+    card = ac.getCard(cid)
+    card.memory_state = FSRSMemoryState(stability=12.5, difficulty=7.0)
+    card.desired_retention = 0.9
+    ac.collection().update_card(card)
+    params = {'query': 'cid:{}'.format(cid)} if endpoint == 'findCards' else {'cards': [cid]}
+    result = getattr(ac, endpoint)(**params, fields=['prop:d'])
+    assert result[0]['prop:d'] == 7.0
+
+
 def test_findCards_with_extended_fields_and_noteFields(setup):
     result = ac.findCards(
         query="deck:test_deck",
@@ -302,6 +316,35 @@ class TestAnswerCards:
 
 
 class TestGradeNow:
+    def test_gradeNow_passes_empty_card_options_when_supported(self, setup, monkeypatch):
+        backend = ac.collection()._backend
+        captured = {}
+
+        def grade_now(_backend, *, card_ids, rating, card_options):
+            captured.update(
+                card_ids=card_ids,
+                rating=rating,
+                card_options=card_options,
+            )
+
+        monkeypatch.setattr(type(backend), 'grade_now', grade_now)
+
+        assert ac.gradeNow(cards=setup.card_ids[:1], ease=3) is True
+        assert captured['card_ids'] == setup.card_ids[:1]
+        assert captured['card_options'] == []
+
+    def test_gradeNow_keeps_legacy_backend_compatibility(self, setup, monkeypatch):
+        backend = ac.collection()._backend
+        captured = {}
+
+        def grade_now(_backend, *, card_ids, rating):
+            captured.update(card_ids=card_ids, rating=rating)
+
+        monkeypatch.setattr(type(backend), 'grade_now', grade_now)
+
+        assert ac.gradeNow(cards=setup.card_ids[:1], ease=3) is True
+        assert captured['card_ids'] == setup.card_ids[:1]
+
     def test_gradeNow(self, setup):
         reviews_before = ac.cardReviews(deck="test_deck", startID=0)
         result = ac.gradeNow(cards=setup.card_ids[:2], ease=3)

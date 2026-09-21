@@ -614,17 +614,44 @@ Documentation for currently supported actions is split up by category and is ref
     </details>
 
 
+#### `cardsDetails`
+
+*   Accepts `cards` (a list of card IDs), optional `fields`, and optional `noteFields`.
+    With both selections omitted, returns the IDs. Otherwise returns `cardId` and
+    the selected values, preserving input order and duplicates.
+*   `fields` supports the same `prop:r`, `prop:s`, and `prop:d` metrics as
+    `cardsInfo`, plus `due`, `queue`, `type`, `interval`, and `reps`.
+    Ordinary card fields do not trigger FSRS statistics.
+*   `noteFields` selects note fields by name, returned as `{value, order}` objects.
+    `findCards` with either selection delegates to `cardsDetails`.
+*   When Anki provides `Collection.card_details`, card values, selected note fields,
+    and requested current FSRS metrics are fetched together. This avoids repeated
+    card loads and transferring complete notes to Python. Requests and responses
+    are unchanged; field names and raw values retain their note-type order.
+    Older cores, missing card/note data, and reviewed cards requiring missing-state
+    initialization retain the original path. No results are cached across requests.
+*   Correction: the fork's 9 May 2026 implementation returned desired retention
+    for `cardsDetails`/`findCards` `prop:d`. It now returns **difficulty**, matching
+    `cardsInfo` and Anki's property meaning. Clients relying on the old incorrect
+    value must adjust; the other response fields and request parameters are unchanged.
+
+
 #### `cardsInfo`
 
 *   Returns a list of objects containing for each card ID the card fields, front and back sides including CSS, note
     type, the note that the card belongs to, and deck name, last modification timestamp as well as ease and interval.
 *   Optional: pass `fields` to include extra values on each card object. Currently supported field values are:
-    `prop:r`, `prop:s`, `prop:d`.
+    `prop:r` (current retrievability), `prop:s` (current stability),
+    `prop:d` (current difficulty). Missing metrics are returned as `null`.
 *   Optional: pass `noteFields` to only include selected note field names in the `fields` object.
 *   Optional: pass `retrieved_info_mode`, one of:
     * `ALL` (default): full payload.
     * `COMPACT`: omits heavy rendered fields (`question`, `answer`, `css`, `nextReviews`).
     * `FIELDS_ONLY`: returns only `cardId`, `fields`, and requested metric fields (`prop:*`).
+*   Current metrics automatically use Anki's native `card_memory_metrics` batch API
+    when available. Older Anki builds use full card statistics. Reviewed cards
+    with missing memory state also use the existing statistics path to retain
+    Anki's initialization behavior. The full Card Info statistics API is unchanged.
 
     <details>
     <summary><i>Sample request:</i></summary>
