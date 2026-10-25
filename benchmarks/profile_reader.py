@@ -20,7 +20,7 @@ import time
 import types
 from pathlib import Path
 
-from performance import ROOT, load_code, new_ac
+from performance import ROOT, baseline_source, load_code, new_ac
 
 
 def prefetch_notes(col, card_ids, requested_fields):
@@ -74,7 +74,7 @@ def prefetched_note_and_model(card, rows):
 
 def make_prefetched_details(ns):
     """Keep original validation, card access, stats calls and response building."""
-    tree = ast.parse((ROOT / 'plugin/__init__.py').read_text())
+    tree = ast.parse(baseline_source('plugin/__init__.py'))
     cls = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == 'AnkiConnect')
     fn = copy.deepcopy(next(n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name == 'cardsDetails'))
 

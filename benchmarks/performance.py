@@ -1,4 +1,4 @@
-"""Compare repository code with isolated performance prototypes.
+"""Compare the pinned pre-rewrite baseline with isolated performance prototypes.
 
 Run: rtk proxy python3 benchmarks/performance.py
 Requires the locally installed anki, jsonschema, and PyQt6 packages.
@@ -20,6 +20,7 @@ import random
 import select
 import socket
 import statistics
+import subprocess
 import sys
 import tempfile
 import threading
@@ -36,9 +37,17 @@ ROWS = []
 CHECKS = []
 
 
-def load_code():
+BASELINE_REVISION = '6f0d1bef6d66a3162868d1d25a3a9a6d317099a1'
+
+
+def baseline_source(path):
+    return subprocess.check_output(
+        ['git', '-C', str(ROOT), 'show', BASELINE_REVISION + ':' + path], text=True)
+
+
+def load_code(production_cards=False):
     """Execute original classes without plugin startup or an Anki GUI."""
-    util_tree = ast.parse((ROOT / "plugin/util.py").read_text())
+    util_tree = ast.parse(baseline_source("plugin/util.py"))
     keep = [node for node in util_tree.body if isinstance(node, ast.FunctionDef)
             and node.name in ("api", "cardQuestion", "cardAnswer")]
     util_ns = {}
@@ -47,7 +56,7 @@ def load_code():
                   webBindAddress="127.0.0.1", webBindPort=0,
                   webCorsOrigin=None, webCorsOriginList=["http://localhost"])
     util = types.SimpleNamespace(**util_ns, setting=config.get, batched=itertools.batched)
-    tree = ast.parse((ROOT / "plugin/web.py").read_text())
+    tree = ast.parse(baseline_source("plugin/web.py"))
     tree.body = [node for node in tree.body if not isinstance(node, (ast.Import, ast.ImportFrom))]
     ns = dict(json=json, jsonschema=jsonschema, select=select, socket=socket, util=util)
     exec(compile(tree, "plugin/web.py", "exec"), ns)
@@ -55,10 +64,18 @@ def load_code():
     from anki.errors import NotFoundError
     ns.update(inspect=inspect, Card=object, Note=object, NotFoundError=NotFoundError,
               anki_version=(25, 9, 2))
-    tree = ast.parse((ROOT / "plugin/__init__.py").read_text())
+    tree = ast.parse(baseline_source("plugin/__init__.py"))
     node = next(node for node in tree.body if isinstance(node, ast.ClassDef)
                 and node.name == "AnkiConnect")
     exec(compile(ast.Module(body=[node], type_ignores=[]), "plugin/__init__.py", "exec"), ns)
+    if production_cards:
+        from plugin.extended import ExtendedCards
+        # Keep the isolated benchmark facade/transport; exercise actual runtime card code.
+        for name, method in vars(ExtendedCards).items():
+            if callable(method) and name not in ('__init__', 'collection', 'getCard', 'deckNameFromId'):
+                if not name.startswith('_'):
+                    method = ns['util'].api()(method)
+                setattr(ns['AnkiConnect'], name, method)
     return ns
 
 
@@ -252,7 +269,7 @@ def micro_benchmarks(ns):
 
 
 def make_lazy_details(ns):
-    tree = ast.parse((ROOT / "plugin/__init__.py").read_text())
+    tree = ast.parse(baseline_source("plugin/__init__.py"))
     cls = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "AnkiConnect")
     fn = copy.deepcopy(next(node for node in cls.body if isinstance(node, ast.FunctionDef) and node.name == "cardsDetails"))
     # Retain API metadata so the prototype also works through action dispatch.

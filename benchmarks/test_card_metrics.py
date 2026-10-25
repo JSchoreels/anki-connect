@@ -5,7 +5,7 @@ from unittest.mock import Mock
 import pytest
 from anki.errors import NotFoundError
 
-from performance import new_ac
+from performance import load_code, new_ac
 
 
 def metrics(cid=42, state=True, r=True):
@@ -17,9 +17,15 @@ def metrics(cid=42, state=True, r=True):
 
 
 @pytest.fixture
+def namespace():
+    return load_code(production_cards=True)
+
+
+@pytest.fixture
 def api(namespace):
     card = SimpleNamespace(id=42, type=2, queue=2, due=10, ivl=6, reps=9,
                            ord=0, factor=2500, nid=21, did=1, lapses=1, mod=100, flags=0, left=0,
+                           question=Mock(return_value='question'), answer=Mock(return_value='answer'),
                            note=Mock(return_value=SimpleNamespace(fields=['猫', 'cat'])),
                            note_type=Mock(return_value={'name': 'Basic', 'css': '', 'flds': [
                                {'name': 'Front', 'ord': 0}, {'name': 'Back', 'ord': 1}]}))

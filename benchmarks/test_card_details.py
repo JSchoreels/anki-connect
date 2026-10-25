@@ -5,7 +5,7 @@ from unittest.mock import Mock
 import pytest
 
 from performance import new_ac
-from test_card_metrics import api, metrics  # noqa: F401
+from test_card_metrics import api, metrics, namespace  # noqa: F401
 
 
 def detail(cid=42, *, note=True, state=True, ctype=2):

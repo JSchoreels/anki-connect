@@ -4,6 +4,11 @@ Transport and note-prefetch prototypes live in `performance.py` and
 `profile_reader.py`. Current-metric routing and lazy statistics selection are
 now in the production add-on; `test_card_metrics.py` exercises those methods
 directly, including legacy fallback and the `prop:d` difficulty correction.
+Transport prototypes use the pinned pre-rewrite Git revision `6f0d1be` as their
+historical baseline. Metric/detail tests load the current `plugin/extended.py`
+operations into that isolated facade; real rewritten dispatch and notifications
+are covered by `tests_api/test_extended.py`. A Git checkout containing that
+revision is required for the historical benchmarks.
 Historical reports describe the code at their recorded source hashes.
 
 Run the unit tests:

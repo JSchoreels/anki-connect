@@ -1,0 +1,2083 @@
+{
+  "description": "Reviewed Anki compatibility evidence inventory. Prioritize real native services and GUI boundaries across Anki versions. Successful calls are partial evidence; protocol checks and UI deferrals are tracked separately.",
+  "evidence": [
+    {
+      "source": "tests_api/test_legacy_normalization.py",
+      "case": "test_false_or_invalid_deletion_flags_preserve_decks",
+      "layer": "controlled-admission",
+      "outcome": "failure",
+      "v1": [],
+      "legacy": [
+        "createDeck",
+        "deleteDecks"
+      ],
+      "notes": "A real disposable deck remains present after string false/zero or invalid deletion flags; accepting scalar deck inputs never turns false into destructive approval."
+    },
+    {
+      "source": "tests_api/test_legacy_normalization.py",
+      "case": "test_nonempty_malformed_parameter_containers_are_rejected",
+      "layer": "validation-only",
+      "outcome": "not-executed",
+      "v1": [],
+      "legacy": [
+        "createDeck"
+      ],
+      "notes": "Synchronous dispatch and HTTP reject nonempty arrays, strings and booleans as parameter containers before admitting work or creating decks."
+    },
+    {
+      "source": "tests_api/test_legacy_normalization.py",
+      "case": "test_envelope_normalization_preserves_reply_versions",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "deckNames"
+      ],
+      "notes": "Native deck reads through HTTP and synchronous dispatch cover numeric-string/null versions, null/empty-array parameter containers, ignored surplus keys, unchanged requests and preserved versioned reply envelopes."
+    },
+    {
+      "source": "tests_api/test_legacy_normalization.py",
+      "case": "test_scalar_lists_ids_fields_tags_and_scheduling",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "canAddNotes",
+        "addNotes",
+        "addNote",
+        "notesInfo",
+        "cardsInfo",
+        "getDecks",
+        "cardsToNotes",
+        "updateNoteFields",
+        "addTags",
+        "updateNote",
+        "setEaseFactors",
+        "getEaseFactors",
+        "suspend",
+        "areSuspended",
+        "setDueDate",
+        "answerCards",
+        "deleteNotes"
+      ],
+      "notes": "Real collections and controlled Qt admission exercise scalar lists, decimal string IDs/ease factors/ease values, normalized field keys, null field values, string tags and false booleans. Asserts native note/card effects, a new review with the requested ease, notifications and preservation of an unrelated note on deletion."
+    },
+    {
+      "source": "tests_api/test_legacy_normalization.py",
+      "case": "test_tags_and_null_options_are_consistent",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "addNote",
+        "updateNote",
+        "updateNoteTags",
+        "updateNoteModel",
+        "addTags"
+      ],
+      "notes": "Real native creation, tag replacement and model conversion accept null/whitespace/list tag forms and null creation options. Asserts persisted tags and request immutability; controlled Qt scheduling."
+    },
+    {
+      "source": "tests_api/test_legacy_normalization.py",
+      "case": "test_duplicate_booleans_and_null_defaults",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "addNote",
+        "canAddNoteWithErrorDetail",
+        "canAddNote",
+        "getMediaFilesNames",
+        "apiReflect"
+      ],
+      "notes": "Native duplicate checks distinguish string true/false, accept numeric/null nested defaults, retain duplicate wording and preserve note counts. Also exercises null optional pattern defaults and scalar reflection filters."
+    },
+    {
+      "source": "tests_api/test_legacy_normalization.py",
+      "case": "test_media_targets_and_string_false_preserve_existing_files",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "addNote",
+        "canAddNote",
+        "updateNoteFields"
+      ],
+      "notes": "All three media kinds use actual native media storage. Case/whitespace/scalar/repeated targets append once, including fields omitted from an update. String false renames a collision and preserves original bytes. Pure eligibility leaves no file; creation persists the expected markup and bytes."
+    },
+    {
+      "source": "tests_api/test_legacy_normalization.py",
+      "case": "test_exact_field_names_win_and_ambiguous_updates_leave_notes_unchanged",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "addNote",
+        "updateNoteFields"
+      ],
+      "notes": "Native note contents demonstrate exact-name precedence during creation and updates; conflicting non-exact aliases fail before changing the note."
+    },
+    {
+      "source": "tests_api/test_legacy_normalization.py",
+      "case": "test_scalar_model_inputs_and_integer_parameters",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "createModel",
+        "findModelsById",
+        "findModelsByName",
+        "modelFieldSetFontSize"
+      ],
+      "notes": "Creates a real normal note type from scalar field/template input and a string false flag; scalar model-name/model-ID lookup and a decimal-string font size have asserted native results."
+    },
+    {
+      "source": "tests_api/test_legacy_normalization.py",
+      "case": "test_normalized_ids_still_block_affected_editors",
+      "layer": "controlled-admission",
+      "outcome": "failure",
+      "v1": [],
+      "legacy": [
+        "updateNoteFields",
+        "addTags",
+        "deleteNotes"
+      ],
+      "notes": "A controlled editor registration with a real native note verifies that scalar/padded string IDs still trigger the affected-editor guard before queuing work; fields and tags remain unchanged. No real widget completion is claimed."
+    },
+    {
+      "source": "tests_api/test_legacy_normalization.py",
+      "case": "test_normalized_nested_batches_keep_preflight_and_credentials",
+      "layer": "controlled-admission",
+      "outcome": "failure",
+      "v1": [],
+      "legacy": [
+        "multi",
+        "version",
+        "createDeck",
+        "guiExitAnki"
+      ],
+      "notes": "Normalized nested version/parameter forms retain independent child credentials and versions. Both synchronous and asynchronous preflight reject an exit followed by work before deck creation or shutdown can begin."
+    },
+    {
+      "source": "tests_api/test_legacy_normalization.py",
+      "case": "test_permission_context_and_origin_checks_survive_null_params",
+      "layer": "validation-only",
+      "outcome": "not-executed",
+      "v1": [],
+      "legacy": [
+        "requestPermission",
+        "version"
+      ],
+      "notes": "A mocked permission decision confirms transport-owned origin/allowed context for null parameters. Unknown origins remain rejected for ordinary requests; no real permission dialog is exercised."
+    },
+    {
+      "source": "tests_api/test_legacy_normalization.py",
+      "case": "test_invalid_ids_do_not_turn_into_queries_or_mutations",
+      "layer": "validation-only",
+      "outcome": "not-executed",
+      "v1": [],
+      "legacy": [
+        "areDue",
+        "getIntervals",
+        "deleteNotes"
+      ],
+      "notes": "Fractional/boolean/object/out-of-range/non-decimal IDs are rejected before queries or writes; an existing real native note is preserved."
+    },
+    {
+      "source": "tests_api/test_legacy_normalization.py",
+      "case": "test_invalid_conversion_content_is_rejected_before_native_conversion",
+      "layer": "controlled-admission",
+      "outcome": "failure",
+      "v1": [],
+      "legacy": [
+        "addNote",
+        "updateNoteModel"
+      ],
+      "notes": "Malformed field/tag content is rejected before native model conversion, with original note type, fields and card IDs preserved."
+    },
+    {
+      "source": "tests_api/test_legacy_normalization.py",
+      "case": "test_v1_keeps_strict_types_and_unknown_parameter_validation",
+      "layer": "validation-only",
+      "outcome": "not-executed",
+      "v1": [
+        "cards.getMany",
+        "notes.create",
+        "cards.setSuspended",
+        "decks.list"
+      ],
+      "legacy": [],
+      "notes": "V1 still rejects scalar ID arrays, string tags, null field values, string booleans and surplus parameters without changing the native collection."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_legacy_empty_tags_creation_and_updates",
+      "layer": "legacy-forwarder",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "addNote",
+        "addNotes",
+        "canAddNoteWithErrorDetail",
+        "canAddNotes",
+        "updateNote",
+        "updateNoteTags",
+        "updateNoteModel",
+        "addTags",
+        "removeTags"
+      ],
+      "notes": "Real disposable collection; mixed and all-empty tag lists exercise eligibility, creation, replacement, addition and removal. Asserts native persisted tags, unchanged input, rejection of non-string tags and strict v1 validation."
+    },
+    {
+      "source": "tests_api/test_obsidian.py",
+      "case": "test_obsidian_sync_empty_tags_cloze_report",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "createDeck",
+        "createModel",
+        "addNotes"
+      ],
+      "notes": "Version-2 and version-6 HTTP requests reproduce the reported ObsidianAnkiSync Cloze payload with an empty tag. Asserts native fields, tags, deck and card creation; controlled Qt admission."
+    },
+    {
+      "source": "tools/smoke_gui.py",
+      "case": "browser-startup",
+      "layer": "real-gui",
+      "outcome": "success",
+      "v1": [
+        "browser.open"
+      ],
+      "legacy": [
+        "guiBrowse"
+      ],
+      "notes": "Real Qt browsers and native collections for both editor variants, v1 operations, and legacy version-2/version-6 HTTP requests. A held readiness callback verifies the target search is the sole initial search and the correct rows appear before completion. Checks unchanged search for omitted query and persisted editor changes when reusing the browser."
+    },
+    {
+      "source": "tests_api/test_yomitan.py",
+      "case": "test_legacy_media_targets_omitted_fields",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "addNote",
+        "addNotes",
+        "canAddNoteWithErrorDetail",
+        "notesInfo"
+      ],
+      "notes": "Version-2 and version-6 HTTP requests with controlled Qt admission and real collections verify audio, video and pictures targeting omitted first or second note-type fields. Asserts persisted field markup and media bytes, existing field preservation, ignored unknown targets, source immutability, native notifications, and eligibility checks without media writes."
+    },
+    {
+      "source": "tests_api/test_obsidian.py",
+      "case": "test_obsidian_single_file_bulk_add",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "multi",
+        "createDeck",
+        "addNote",
+        "notesInfo",
+        "getTags",
+        "deleteNotes",
+        "changeDeck"
+      ],
+      "notes": "Obsidian_to_Anki 3.6.0 nested version-6 HTTP batches with 44, 45 and 300 new notes, strict nested envelopes, numeric IDs, persisted ordered fields, tags, and empty operations. Regresses the accidental 100-node legacy limit."
+    },
+    {
+      "source": "tests_api/test_obsidian.py",
+      "case": "test_obsidian_vault_add_edit_move_tags_delete_and_media",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "modelNames",
+        "modelFieldNames",
+        "multi",
+        "createDeck",
+        "addNote",
+        "notesInfo",
+        "getTags",
+        "updateNoteFields",
+        "deleteNotes",
+        "storeMediaFile",
+        "changeDeck",
+        "removeTags",
+        "addTags"
+      ],
+      "notes": "Complete native 20-file vault sync/resync: 120 Basic/Cloze notes, 140 cards, local-path/base64 media, HTML/backlinks, field updates, deck moves, tag replacement and explicit deletion. Asserts unchanged note/card IDs, scheduling and review history, and unrelated-note preservation. Qt admission is controlled; Obsidian parser/UI is not executed."
+    },
+    {
+      "source": "tests_api/test_obsidian.py",
+      "case": "test_obsidian_changed_empty_files",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "multi",
+        "notesInfo",
+        "getTags",
+        "deleteNotes",
+        "changeDeck"
+      ],
+      "notes": "Forty changed files with no cards produce nested empty batches through both HTTP sync phases; no notes are created."
+    },
+    {
+      "source": "tests_api/test_obsidian.py",
+      "case": "test_obsidian_nested_item_failures_preserve_order_and_successes",
+      "layer": "controlled-admission",
+      "outcome": "failure",
+      "v1": [],
+      "legacy": [
+        "addNote",
+        "storeMediaFile"
+      ],
+      "notes": "Native duplicate rejection and missing local-media file retain their per-item version-6 error slots; successful following notes/media persist in order and outer/nested multi envelopes remain successful."
+    },
+    {
+      "source": "tools/smoke_gui.py",
+      "case": "obsidian",
+      "layer": "http-gui",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "modelNames",
+        "multi",
+        "createDeck",
+        "addNote",
+        "notesInfo",
+        "getTags",
+        "updateNoteFields",
+        "deleteNotes",
+        "storeMediaFile",
+        "changeDeck",
+        "removeTags",
+        "addTags"
+      ],
+      "notes": "Real HTTP listener and Qt/native task completion in a disposable profile: 45 new notes across 40 changed files, local media, 44 edits, deck moves, tag replacement and explicit deletion. Asserts response CORS, native effects, numeric IDs and drained collection work. Obsidian UI is not executed."
+    },
+    {
+      "source": "tests_api/test_cors.py",
+      "case": "test_new_origin_preflights_and_awaits_permission",
+      "layer": "validation-only",
+      "outcome": "not-executed",
+      "v1": [
+        "access.requestPermission"
+      ],
+      "legacy": [
+        "requestPermission"
+      ],
+      "notes": "HTTP preflight permits JSON permission discovery from new origins without a key. Mocked deferred decisions check grant/deny reply headers and transport-supplied origin context; native permission dialogs are not executed."
+    },
+    {
+      "source": "tests_api/test_cors.py",
+      "case": "test_preflight_does_not_bypass_origin_or_api_key",
+      "layer": "validation-only",
+      "outcome": "not-executed",
+      "v1": [
+        "collection.get"
+      ],
+      "legacy": [
+        "version"
+      ],
+      "notes": "Preflight does not authorize subsequent actions: rejected origins never dispatch on either endpoint, and v1 requires the configured Bearer key. Allowed dispatch uses a fake callback; native collection methods are not executed."
+    },
+    {
+      "source": "tests_api/test_yomitan.py",
+      "case": "test_yomitan_mining_lookup_overwrite_media_and_suspension",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "version",
+        "deckNames",
+        "modelNames",
+        "modelFieldNames",
+        "apiReflect",
+        "storeMediaFile",
+        "addNote",
+        "canAddNotesWithErrorDetail",
+        "canAddNotes",
+        "findNotes",
+        "multi",
+        "notesInfo",
+        "findCards",
+        "cardsInfo",
+        "suspend",
+        "updateNoteFields",
+        "addNotes"
+      ],
+      "notes": "Yomitan version-2 requests through HTTP reply formatting and controlled Qt admission, with and without an API key. Native collection/media effects, duplicate lookup, versionless multi entries, numeric IDs, missing-record sentinels, suspension, JSON-null overwrite replies, and 100-note deck-generation batches are asserted."
+    },
+    {
+      "source": "tests_api/test_yomitan.py",
+      "case": "test_yomitan_mining_lookup_overwrite_media_and_suspension",
+      "layer": "controlled-admission",
+      "outcome": "failure",
+      "v1": [],
+      "legacy": [
+        "sync"
+      ],
+      "notes": "Version-2 sync without credentials returns the historical auth error through HTTP formatting. No network sync account or completion is exercised."
+    },
+    {
+      "source": "tests_api/test_yomitan.py",
+      "case": "test_yomitan_root_deck_and_all_models_duplicate_options",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "canAddNotesWithErrorDetail"
+      ],
+      "notes": "Native notes in sibling decks and another note type verify Yomitan root-deck/checkChildren and collection/checkAllModels options through version-2 HTTP formatting and controlled admission."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_legacy_yomitan_deck_scope_defaults_and_mining",
+      "layer": "legacy-forwarder",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "addNote",
+        "addNotes",
+        "canAddNoteWithErrorDetail",
+        "canAddNotes",
+        "canAddNotesWithErrorDetail"
+      ],
+      "notes": "Real disposable collection; Yomitan-shaped deck-scoped probes and mining requests accept omitted/null duplicate deck names, respect explicit scopes, preserve inputs, and persist notes/cards in the destination deck. Native v1 null names remain invalid. Bypasses HTTP and admission."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_media_filename_native_round_trip",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [
+        "media.delete",
+        "media.get",
+        "media.store"
+      ],
+      "legacy": [],
+      "notes": "Dispatcher admission with controlled Qt scheduling for media.store; direct native services for reads and deletion. Asserts operation completion, sanitized/NFC filenames, persisted bytes, and deletion in a real collection."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_media_filename_native_round_trip",
+      "layer": "legacy-forwarder",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "deleteMediaFile",
+        "retrieveMediaFile",
+        "storeMediaFile"
+      ],
+      "notes": "Real native storage, retrieval, and deletion using sanitized/NFC filenames; binds public legacy signatures but bypasses HTTP and the public dispatcher. Asserts returned filenames and persisted bytes."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_native_collection_round_trip",
+      "layer": "native-service",
+      "outcome": "success",
+      "v1": [
+        "cards.get",
+        "cards.render",
+        "cards.setFlags",
+        "decks.create",
+        "noteTypes.list",
+        "notes.create",
+        "notes.get",
+        "notes.update",
+        "notes.validate",
+        "reviews.list",
+        "scheduling.answer",
+        "scheduling.predict",
+        "statistics.getReviewDays",
+        "statistics.getSummary",
+        "statistics.getToday"
+      ],
+      "legacy": [],
+      "notes": "Calls Services.execute through the call helper; successful results are schema-validated. Assertions vary by method; invocation is not complete behavioral coverage."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_legacy_forwards",
+      "layer": "legacy-forwarder",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "addNote",
+        "canAddNote",
+        "cardsInfo",
+        "createDeck",
+        "findCards",
+        "notesInfo"
+      ],
+      "notes": "Calls Legacy.call directly with a real collection; bypasses HTTP and the public legacy dispatcher."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_scheduler_queue_preserves_native_order_without_consuming_cards",
+      "layer": "native-service",
+      "outcome": "success",
+      "v1": [
+        "notes.create",
+        "scheduling.getQueue"
+      ],
+      "legacy": [],
+      "notes": "Real disposable collection; Verifies native scheduler order, fetch limiting, new-card classification, remaining counts and idempotent repeated reads without review history."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_bulk_atomic_validation_and_media_ownership",
+      "layer": "native-service",
+      "outcome": "failure",
+      "v1": [
+        "notes.createMany"
+      ],
+      "legacy": [],
+      "notes": "Atomic validation failure and unchanged collection; no successful bulk creation case."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_bulk_atomic_validation_and_media_ownership",
+      "layer": "legacy-forwarder",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "createDeck"
+      ],
+      "notes": "Calls Legacy.call directly with a real collection; bypasses HTTP and the public legacy dispatcher."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_structures_presets_tags_and_decks",
+      "layer": "native-service",
+      "outcome": "success",
+      "v1": [
+        "deckPresets.assign",
+        "deckPresets.create",
+        "deckPresets.delete",
+        "deckPresets.get",
+        "deckPresets.update",
+        "decks.create",
+        "decks.delete",
+        "decks.getCounts",
+        "noteTypes.create",
+        "noteTypes.deleteUnused",
+        "noteTypes.editStructure",
+        "noteTypes.get",
+        "noteTypes.getTemplateUsage",
+        "noteTypes.replaceText",
+        "notes.create",
+        "notes.delete",
+        "tags.add",
+        "tags.deleteUnused",
+        "tags.remove",
+        "tags.replace"
+      ],
+      "legacy": [],
+      "notes": "Calls Services.execute through the call helper; successful results are schema-validated. Assertions vary by method; invocation is not complete behavioral coverage."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_note_type_delete_unused_reports_items_and_removes_type",
+      "layer": "native-service",
+      "outcome": "success",
+      "v1": [
+        "noteTypes.create",
+        "noteTypes.deleteUnused",
+        "notes.create",
+        "notes.delete"
+      ],
+      "legacy": [],
+      "notes": "Real disposable collection; asserts the in-use conflict item, the deleted item result, and that the note type is removed. Calls Services.execute through the call helper."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_historical_reviews_transaction_and_sync_flags",
+      "layer": "native-service",
+      "outcome": "success",
+      "v1": [
+        "advanced.reviews.import",
+        "notes.create"
+      ],
+      "legacy": [],
+      "notes": "Calls Services.execute through the call helper; successful results are schema-validated. Assertions vary by method; invocation is not complete behavioral coverage."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_search_cursor_query_binding_and_deleted_ids",
+      "layer": "native-service",
+      "outcome": "success",
+      "v1": [
+        "notes.create",
+        "notes.delete",
+        "notes.search"
+      ],
+      "legacy": [],
+      "notes": "Calls Services.execute through the call helper; successful results are schema-validated. Assertions vary by method; invocation is not complete behavioral coverage."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_conversion_preserves_cards_and_native_undo",
+      "layer": "native-service",
+      "outcome": "success",
+      "v1": [
+        "collection.undo",
+        "noteTypes.create",
+        "notes.convert",
+        "notes.create",
+        "notes.get",
+        "notes.planConversion"
+      ],
+      "legacy": [],
+      "notes": "Calls Services.execute through the call helper; successful results are schema-validated. Assertions vary by method; invocation is not complete behavioral coverage."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_answer_many_and_filtered_home_history",
+      "layer": "native-service",
+      "outcome": "success",
+      "v1": [
+        "notes.create",
+        "scheduling.answerMany",
+        "scheduling.getDue",
+        "scheduling.predict",
+        "scheduling.reset",
+        "scheduling.setDueDate"
+      ],
+      "legacy": [],
+      "notes": "Calls Services.execute through the call helper; successful results are schema-validated. Assertions vary by method; invocation is not complete behavioral coverage."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_legacy_preset_changes_use_native_updates",
+      "layer": "legacy-forwarder",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "getDeckConfig",
+        "saveDeckConfig"
+      ],
+      "notes": "Calls Legacy.call directly with a real collection; bypasses HTTP and the public legacy dispatcher."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_packages_native_export_import",
+      "layer": "native-service",
+      "outcome": "success",
+      "v1": [
+        "notes.create",
+        "packages.export",
+        "packages.import"
+      ],
+      "legacy": [],
+      "notes": "Calls Services.execute through the call helper; successful results are schema-validated. Assertions vary by method; invocation is not complete behavioral coverage."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_text_replacement_is_one_native_undo",
+      "layer": "native-service",
+      "outcome": "success",
+      "v1": [
+        "collection.undo",
+        "noteTypes.create",
+        "noteTypes.get",
+        "noteTypes.replaceText"
+      ],
+      "legacy": [],
+      "notes": "Calls Services.execute through the call helper; successful results are schema-validated. Assertions vary by method; invocation is not complete behavioral coverage."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_cloze_native_validation_and_conversion",
+      "layer": "native-service",
+      "outcome": "success",
+      "v1": [
+        "notes.convert",
+        "notes.create",
+        "notes.get",
+        "notes.planConversion",
+        "notes.validate"
+      ],
+      "legacy": [],
+      "notes": "Calls Services.execute through the call helper; successful results are schema-validated. Assertions vary by method; invocation is not complete behavioral coverage."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_new_per_day_minimum_round_trip",
+      "layer": "native-service",
+      "outcome": "success",
+      "v1": [
+        "deckPresets.get",
+        "deckPresets.update"
+      ],
+      "legacy": [],
+      "notes": "Calls Services.execute through the call helper; successful results are schema-validated. Assertions vary by method; invocation is not complete behavioral coverage."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_new_per_day_minimum_round_trip",
+      "layer": "legacy-forwarder",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "getDeckConfig",
+        "saveDeckConfig"
+      ],
+      "notes": "Calls Legacy.call directly with a real collection; bypasses HTTP and the public legacy dispatcher."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_template_usage_respects_native_token_rules",
+      "layer": "native-service",
+      "outcome": "success",
+      "v1": [
+        "noteTypes.create",
+        "noteTypes.getTemplateUsage"
+      ],
+      "legacy": [],
+      "notes": "Calls Services.execute through the call helper; successful results are schema-validated. Assertions vary by method; invocation is not complete behavioral coverage."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_legacy_signatures_and_reflection",
+      "layer": "legacy-dispatch",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "apiReflect",
+        "version"
+      ],
+      "notes": "Version envelopes and API key handling through owner.handler; apiReflect is called directly and its action count is asserted."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_http_multi_observes_completed_native_writes",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "createDeck",
+        "deckNames",
+        "multi"
+      ],
+      "notes": "Real collection, controlled task queue and mocked main window; checks ordered mutation results and completion."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_execute_operation_waits_and_continues_after_errors",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [
+        "api.execute",
+        "decks.create",
+        "decks.list"
+      ],
+      "legacy": [],
+      "notes": "Real collection with controlled scheduling; asserts command outcomes and completed writes."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_execute_operation_waits_and_continues_after_errors",
+      "layer": "controlled-admission",
+      "outcome": "failure",
+      "v1": [
+        "notes.get"
+      ],
+      "legacy": [],
+      "notes": "Missing note yields notFound inside api.execute."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_v1_replacement_restores_original_after_native_failure",
+      "layer": "controlled-admission",
+      "outcome": "failure",
+      "v1": [
+        "media.store"
+      ],
+      "legacy": [],
+      "notes": "Injected native write failure; asserts ioError and restoration. No successful media.store API call."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_nested_multi_preflights_exit_limits_and_shapes",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "guiExitAnki",
+        "multi",
+        "version"
+      ],
+      "notes": "Nested validation and controlled exit admission; asserts exit_requested, not real GUI shutdown. createDeck is only in rejected requests and is not credited."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_execute_cancel_preserves_completed_outcomes",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [
+        "api.execute",
+        "decks.create"
+      ],
+      "legacy": [],
+      "notes": "Cancellation uses Operations.cancel directly, so it does not establish operations.cancel API coverage."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_discovery_and_dispatch_agree_on_missing_native_capability",
+      "layer": "controlled-admission",
+      "outcome": "failure",
+      "v1": [
+        "packages.export"
+      ],
+      "legacy": [],
+      "notes": "Removed native capability produces unsupportedCapability. Runtime.describe is a helper, not an api.describe request."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_queued_gui_operation_rechecks_collection_work",
+      "layer": "controlled-admission",
+      "outcome": "failure",
+      "v1": [
+        "editors.openAdd"
+      ],
+      "legacy": [],
+      "notes": "Busy-state rejection with mocked GUI execute; GUI method is not reached."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_legacy_browser_reply_waits_for_gui_initialization",
+      "layer": "mocked-gui",
+      "outcome": "not-executed",
+      "v1": [],
+      "legacy": [
+        "guiBrowse"
+      ],
+      "notes": "Mocked GUI completion Deferred verifies reply timing; real browser behavior is covered separately."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_dispatcher_validation_and_notifications",
+      "layer": "validation-only",
+      "outcome": "not-executed",
+      "v1": [
+        "decks.create",
+        "notes.get"
+      ],
+      "legacy": [],
+      "notes": "Invalid params and ignored notification; runtime invocation is not reached."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_http_routing_auth_cors_and_notifications",
+      "layer": "validation-only",
+      "outcome": "not-executed",
+      "v1": [
+        "collection.get"
+      ],
+      "legacy": [],
+      "notes": "HTTP auth/CORS/notification checks with fake dispatch callback; collection.get implementation is not executed."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_operation_rejects_invalid_terminal_result",
+      "layer": "validation-only",
+      "outcome": "not-executed",
+      "v1": [
+        "media.store"
+      ],
+      "legacy": [],
+      "notes": "Operations.submit uses a fabricated result; verifies schema enforcement, not media.store implementation."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_v1_bulk_reads_validation_and_atomic_creation",
+      "layer": "native-service",
+      "outcome": "success",
+      "v1": [
+        "cards.getMany",
+        "cards.search",
+        "notes.createMany",
+        "notes.getMany",
+        "notes.validateMany"
+      ],
+      "legacy": [],
+      "notes": "Real disposable collection; asserts persisted results, native effects, and relevant failure behavior. Legacy calls bind the public signature but bypass HTTP and the public dispatcher."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_scheduler_rating_matches_native_review_history",
+      "layer": "native-service",
+      "outcome": "success",
+      "v1": [
+        "notes.create",
+        "reviews.list",
+        "scheduling.answer",
+        "scheduling.predict"
+      ],
+      "legacy": [],
+      "notes": "All four ratings are answered through real scheduling states; asserts independently expected review-history ease numbers and API rating names. Regression for the native rating enum versus legacy button-number mismatch."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_v1_empty_notes_and_native_tag_registry",
+      "layer": "native-service",
+      "outcome": "success",
+      "v1": [
+        "notes.create",
+        "notes.delete",
+        "notes.findEmpty",
+        "notes.update",
+        "tags.deleteUnused",
+        "tags.list"
+      ],
+      "legacy": [],
+      "notes": "Real disposable collection; asserts persisted results, native effects, and relevant failure behavior. Legacy calls bind the public signature but bypass HTTP and the public dispatcher."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_v1_move_suspend_and_advanced_card_metadata",
+      "layer": "native-service",
+      "outcome": "success",
+      "v1": [
+        "advanced.cards.update",
+        "cards.move",
+        "cards.setSuspended",
+        "decks.create",
+        "notes.create",
+        "scheduling.get"
+      ],
+      "legacy": [],
+      "notes": "Real disposable collection; asserts persisted results, native effects, and relevant failure behavior. Legacy calls bind the public signature but bypass HTTP and the public dispatcher."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_v1_deck_rename_and_preset_listing",
+      "layer": "native-service",
+      "outcome": "success",
+      "v1": [
+        "deckPresets.list",
+        "decks.create",
+        "decks.get",
+        "decks.update"
+      ],
+      "legacy": [],
+      "notes": "Real disposable collection; asserts persisted results, native effects, and relevant failure behavior. Legacy calls bind the public signature but bypass HTTP and the public dispatcher."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_v1_note_type_metadata_and_rendering",
+      "layer": "native-service",
+      "outcome": "success",
+      "v1": [
+        "cards.render",
+        "noteTypes.create",
+        "noteTypes.update",
+        "notes.create"
+      ],
+      "legacy": [],
+      "notes": "Real disposable collection; asserts persisted results, native effects, and relevant failure behavior. Legacy calls bind the public signature but bypass HTTP and the public dispatcher."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_v1_integrity_stats_and_latest_review",
+      "layer": "native-service",
+      "outcome": "success",
+      "v1": [
+        "collection.checkIntegrity",
+        "collection.get",
+        "notes.create",
+        "reviews.getLatestId",
+        "scheduling.answer",
+        "scheduling.predict",
+        "statistics.getHtml",
+        "statistics.getSummary",
+        "statistics.getToday"
+      ],
+      "legacy": [],
+      "notes": "Real disposable collection; asserts persisted results, native effects, and relevant failure behavior. Legacy calls bind the public signature but bypass HTTP and the public dispatcher."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_v1_media_storage_completion_and_native_files",
+      "layer": "native-service",
+      "outcome": "success",
+      "v1": [
+        "media.delete",
+        "media.get",
+        "media.getDirectory",
+        "media.list"
+      ],
+      "legacy": [],
+      "notes": "Real disposable collection; asserts persisted results, native effects, and relevant failure behavior. Legacy calls bind the public signature but bypass HTTP and the public dispatcher."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_discovery_permissions_and_operation_endpoints",
+      "layer": "legacy-forwarder",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "requestPermission"
+      ],
+      "notes": "Real disposable collection; asserts persisted results, native effects, and relevant failure behavior. Legacy calls bind the public signature but bypass HTTP and the public dispatcher."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_legacy_note_validation_updates_tags_and_deletion",
+      "layer": "legacy-forwarder",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "addNotes",
+        "addTags",
+        "canAddNoteWithErrorDetail",
+        "canAddNotes",
+        "canAddNotesWithErrorDetail",
+        "clearUnusedTags",
+        "deleteNotes",
+        "findNotes",
+        "getNoteTags",
+        "getTags",
+        "notesModTime",
+        "removeTags",
+        "replaceTags",
+        "replaceTagsInAllNotes",
+        "updateNote",
+        "updateNoteFields",
+        "updateNoteTags"
+      ],
+      "notes": "Real disposable collection; asserts persisted results, native effects, and relevant failure behavior. Legacy calls bind the public signature but bypass HTTP and the public dispatcher."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_legacy_note_validation_updates_tags_and_deletion",
+      "layer": "legacy-forwarder",
+      "outcome": "failure",
+      "v1": [],
+      "legacy": [
+        "removeEmptyNotes"
+      ],
+      "notes": "The action deliberately rejects implicit empty-note deletion with compatibilityError; asserts that documented rejection."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_legacy_decks_configs_and_card_projections",
+      "layer": "legacy-forwarder",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "addNote",
+        "cardsModTime",
+        "cardsToNotes",
+        "changeDeck",
+        "cloneDeckConfigId",
+        "createDeck",
+        "deckNameFromId",
+        "deckNamesAndIds",
+        "deleteDecks",
+        "getDeckConfig",
+        "getDeckStats",
+        "getDecks",
+        "removeDeckConfigId",
+        "setDeckConfigId"
+      ],
+      "notes": "Real disposable collection; asserts persisted results, native effects, and relevant failure behavior. Legacy calls bind the public signature but bypass HTTP and the public dispatcher."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_legacy_scheduling_metadata_and_reviews",
+      "layer": "legacy-forwarder",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "addNote",
+        "answerCards",
+        "areDue",
+        "areSuspended",
+        "cardReviews",
+        "forgetCards",
+        "getCollectionStatsHTML",
+        "getEaseFactors",
+        "getIntervals",
+        "getLatestReviewID",
+        "getNumCardsReviewedByDay",
+        "getNumCardsReviewedToday",
+        "getReviewsOfCards",
+        "insertReviews",
+        "relearnCards",
+        "setDueDate",
+        "setEaseFactors",
+        "setSpecificValueOfCard",
+        "suspend",
+        "suspended",
+        "unsuspend"
+      ],
+      "notes": "Real disposable collection; asserts persisted results, native effects, and relevant failure behavior. Legacy calls bind the public signature but bypass HTTP and the public dispatcher."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_legacy_media_and_packages",
+      "layer": "legacy-forwarder",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "addNote",
+        "deleteMediaFile",
+        "deleteNotes",
+        "exportPackage",
+        "getMediaDirPath",
+        "getMediaFilesNames",
+        "importPackage",
+        "retrieveMediaFile",
+        "storeMediaFile"
+      ],
+      "notes": "Real disposable collection; asserts persisted results, native effects, and relevant failure behavior. Legacy calls bind the public signature but bypass HTTP and the public dispatcher."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_legacy_note_type_structure_and_conversion",
+      "layer": "legacy-forwarder",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "addNote",
+        "createModel",
+        "findAndReplaceInModels",
+        "findModelsById",
+        "findModelsByName",
+        "modelFieldAdd",
+        "modelFieldDescriptions",
+        "modelFieldFonts",
+        "modelFieldNames",
+        "modelFieldRemove",
+        "modelFieldRename",
+        "modelFieldReposition",
+        "modelFieldSetDescription",
+        "modelFieldSetFont",
+        "modelFieldSetFontSize",
+        "modelFieldsOnTemplates",
+        "modelNameFromId",
+        "modelNames",
+        "modelNamesAndIds",
+        "modelStyling",
+        "modelTemplateAdd",
+        "modelTemplateRemove",
+        "modelTemplateRename",
+        "modelTemplateReposition",
+        "modelTemplates",
+        "updateModelStyling",
+        "updateModelTemplates",
+        "updateNoteModel"
+      ],
+      "notes": "Real disposable collection; asserts persisted results, native effects, and relevant failure behavior. Legacy calls bind the public signature but bypass HTTP and the public dispatcher."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_v1_media_storage_completion_and_native_files",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [
+        "media.store",
+        "operations.get"
+      ],
+      "legacy": [],
+      "notes": "Real collection with controlled scheduling. Executes JSON-RPC requests and asserts operation completion/cancellation, persisted files, capabilities, or allowed-origin permissions. Media covers native creation, replacement, and conflict rollback."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_discovery_permissions_and_operation_endpoints",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [
+        "api.describe",
+        "access.requestPermission",
+        "api.execute",
+        "operations.cancel",
+        "operations.get"
+      ],
+      "legacy": [],
+      "notes": "Real collection with controlled scheduling. Executes JSON-RPC requests and asserts operation completion/cancellation, persisted files, capabilities, or allowed-origin permissions. Media covers native creation, replacement, and conflict rollback."
+    },
+    {
+      "source": "tools/smoke_gui.py",
+      "case": "editors",
+      "layer": "real-gui",
+      "outcome": "success",
+      "v1": [
+        "editors.openAdd",
+        "editors.updateDraft"
+      ],
+      "legacy": [
+        "guiAddCards",
+        "guiAddNoteSetData"
+      ],
+      "notes": "Real Qt windows, native collection, and disposable profiles. Checks observable UI/native effects and completion. Legacy helper preserves admission replies and then awaits created operations. Silent-card audio checks call plumbing only; audible output remains deferred. Both Add editor variants also exercise case/whitespace field matching, null initial tags/options/fields, string tags, scalar attachment targets and string append booleans, with persisted note/media/tag assertions."
+    },
+    {
+      "source": "tools/smoke_gui.py",
+      "case": "browser",
+      "layer": "real-gui",
+      "outcome": "success",
+      "v1": [
+        "browser.getSelection",
+        "browser.open",
+        "browser.select",
+        "noteTypes.editStructure",
+        "notes.create",
+        "scheduling.setDueDate"
+      ],
+      "legacy": [
+        "guiBrowse",
+        "guiSelectCard",
+        "guiSelectNote",
+        "guiSelectedNotes"
+      ],
+      "notes": "Real Qt windows, native collection, and disposable profiles. Checks observable UI/native effects and completion. Legacy helper preserves admission replies and then awaits created operations. Silent-card audio checks call plumbing only; audible output remains deferred."
+    },
+    {
+      "source": "tools/smoke_gui.py",
+      "case": "custom",
+      "layer": "real-gui",
+      "outcome": "success",
+      "v1": [
+        "editors.openNote"
+      ],
+      "legacy": [
+        "guiEditNote",
+        "cardsInfo",
+        "cardsDetails",
+        "findCards",
+        "gradeNow",
+        "repositionNewCards"
+      ],
+      "notes": "Real Qt windows, native collection, and disposable profiles. Checks observable UI/native effects and completion. Legacy helper preserves admission replies and then awaits created operations. Silent-card audio checks call plumbing only; audible output remains deferred. Extended card selection, ordered repositioning and immediate grading also execute through real Qt task admission after the editor closes."
+    },
+    {
+      "source": "tools/smoke_gui.py",
+      "case": "reviewer",
+      "layer": "real-gui",
+      "outcome": "success",
+      "v1": [
+        "application.navigate",
+        "notes.create",
+        "reviewer.answer",
+        "reviewer.get",
+        "reviewer.playAudio",
+        "reviewer.showAnswer",
+        "reviewer.showQuestion",
+        "reviewer.startTimer"
+      ],
+      "legacy": [
+        "guiAnswerCard",
+        "guiCurrentCard",
+        "guiDeckBrowser",
+        "guiDeckOverview",
+        "guiDeckReview",
+        "guiPlayAudio",
+        "guiReviewActive",
+        "guiShowAnswer",
+        "guiShowQuestion",
+        "guiStartCardTimer"
+      ],
+      "notes": "Real Qt windows, native collection, and disposable profiles. Checks observable UI/native effects and completion. Legacy helper preserves admission replies and then awaits created operations. Silent-card audio checks call plumbing only; audible output remains deferred."
+    },
+    {
+      "source": "tools/smoke_gui.py",
+      "case": "imports",
+      "layer": "real-gui",
+      "outcome": "success",
+      "v1": [
+        "application.importFile",
+        "operations.cancel"
+      ],
+      "legacy": [
+        "guiImportFile"
+      ],
+      "notes": "Real Qt windows, native collection, and disposable profiles. Checks observable UI/native effects and completion. Legacy helper preserves admission replies and then awaits created operations. Silent-card audio checks call plumbing only; audible output remains deferred."
+    },
+    {
+      "source": "tools/smoke_gui.py",
+      "case": "profiles",
+      "layer": "real-gui",
+      "outcome": "success",
+      "v1": [
+        "collection.refresh",
+        "notes.create",
+        "profiles.getActive",
+        "profiles.list",
+        "profiles.switch",
+        "access.requestPermission"
+      ],
+      "legacy": [
+        "getActiveProfile",
+        "getProfiles",
+        "guiCheckDatabase",
+        "guiUndo",
+        "loadProfile",
+        "reloadCollection",
+        "requestPermission"
+      ],
+      "notes": "Real Qt windows, native collection, and disposable profiles. Checks observable UI/native effects and completion. Legacy helper preserves admission replies and then awaits created operations. Silent-card audio checks call plumbing only; audible output remains deferred. Native permission prompts return without nested event loops; grant/deny responses and persisted origin settings are checked through both transport wrappers."
+    },
+    {
+      "source": "tools/smoke_gui.py",
+      "case": "profiles",
+      "layer": "real-gui",
+      "outcome": "failure",
+      "v1": [
+        "collection.sync"
+      ],
+      "legacy": [
+        "sync"
+      ],
+      "notes": "Real ProfileManager with no credentials; asserts authenticationRequired before network sync. Authenticated sync remains untested. Also binds the adapter call shapes against real Qt task manager, profile manager, main window, media syncer, and lifecycle hook interfaces without invoking network sync."
+    },
+    {
+      "source": "tools/smoke_gui.py",
+      "case": "colpkg",
+      "layer": "real-gui",
+      "outcome": "success",
+      "v1": [
+        "application.importFile",
+        "notes.get"
+      ],
+      "legacy": [],
+      "notes": "Real Qt windows, native collection, and disposable profiles. Checks observable UI/native effects and completion. Legacy helper preserves admission replies and then awaits created operations. Silent-card audio checks call plumbing only; audible output remains deferred."
+    },
+    {
+      "source": "tools/smoke_gui.py",
+      "case": "exit",
+      "layer": "http-gui",
+      "outcome": "success",
+      "v1": [
+        "application.exit"
+      ],
+      "legacy": [],
+      "notes": "Real Qt windows, native collection, and disposable profiles. Checks observable UI/native effects and completion. Legacy helper preserves admission replies and then awaits created operations. Silent-card audio checks call plumbing only; audible output remains deferred."
+    },
+    {
+      "source": "tools/smoke_gui.py",
+      "case": "legacy-exit",
+      "layer": "http-gui",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "guiExitAnki"
+      ],
+      "notes": "Real Qt windows, native collection, and disposable profiles. Checks observable UI/native effects and completion. Legacy helper preserves admission replies and then awaits created operations. Silent-card audio checks call plumbing only; audible output remains deferred."
+    },
+    {
+      "source": "tools/smoke_gui.py",
+      "case": "setup",
+      "layer": "real-gui",
+      "outcome": "success",
+      "v1": [
+        "notes.create"
+      ],
+      "legacy": [],
+      "notes": "Common setup creates a native note through the real runtime before each GUI scenario."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_preset_enums_match_native_semantics",
+      "layer": "native-service",
+      "outcome": "success",
+      "v1": [
+        "deckPresets.update"
+      ],
+      "legacy": [],
+      "notes": "26 parameterized cases compare persisted native protobuf enum numbers with independently named native enum descriptors, including every gather/review order. This catches semantic drift that a public get/update round trip alone would miss."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_sync_native_interfaces_without_credentials",
+      "layer": "validation-only",
+      "outcome": "not-executed",
+      "v1": [
+        "collection.sync"
+      ],
+      "legacy": [
+        "sync"
+      ],
+      "notes": "Offline compatibility preflight: real Rust media status and idle cancellation calls, scheduler reload, native sync call signatures, and response fields/constants. Neither API completes a sync in this test; authenticated sync remains untested."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_search_uses_native_browser_sort_columns",
+      "layer": "native-service",
+      "outcome": "success",
+      "v1": [
+        "notes.search",
+        "cards.search"
+      ],
+      "legacy": [],
+      "notes": "Native browser sort columns in both directions for notes/cards, with pagination and invalid-column rejection. Regression for passing browser column keys as raw SQL."
+    },
+    {
+      "source": "tests_api/test_boundaries.py",
+      "case": "test_sync_respects_profile_media_setting",
+      "layer": "mocked-gui",
+      "outcome": "not-executed",
+      "v1": [
+        "collection.sync"
+      ],
+      "legacy": [],
+      "notes": "Controlled orchestration verifies that the request and profile media setting are intersected, monitoring follows that decision, and lifecycle admission is released. Network sync is replaced; this does not certify authenticated sync."
+    },
+    {
+      "source": "tests_api/test_boundaries.py",
+      "case": "test_legacy_gui_media_preparation_and_cleanup_are_queued",
+      "layer": "mocked-gui",
+      "outcome": "not-executed",
+      "v1": [],
+      "legacy": [
+        "guiAddCards",
+        "guiAddNoteSetData"
+      ],
+      "notes": "Real native media writes and queued preparation/cleanup; controlled GUI completion verifies accepted-result projection and restoration after editor conflict. GUI objects are substituted; real editor media persistence is separately checked by the editors scenario."
+    },
+    {
+      "source": "tests_api/test_boundaries.py",
+      "case": "test_native_package_io_failures_are_reported_without_closing_collection",
+      "layer": "native-service",
+      "outcome": "failure",
+      "v1": [
+        "packages.import",
+        "packages.export"
+      ],
+      "legacy": [],
+      "notes": "Native corrupt-package import and missing-directory export produce ioError while the collection remains usable."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_legacy_note_errors_keep_client_compatible_wording",
+      "layer": "legacy-forwarder",
+      "outcome": "failure",
+      "v1": [],
+      "legacy": [
+        "addNote",
+        "addNotes",
+        "canAddNote",
+        "canAddNoteWithErrorDetail",
+        "canAddNotes",
+        "canAddNotesWithErrorDetail"
+      ],
+      "notes": "Real disposable collection; asserts exact historical legacy error strings and relevant mutation effects. Direct forwarder calls bind public signatures; bypass HTTP and admission."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_legacy_batch_duplicate_and_native_empty_question_fallback",
+      "layer": "legacy-forwarder",
+      "outcome": "failure",
+      "v1": [
+        "notes.validate"
+      ],
+      "legacy": [
+        "addNotes"
+      ],
+      "notes": "Real native collection: legacy bulk duplicates retain their aggregated error, while v1 notes.validate retains strict empty-question validation. No HTTP or real GUI."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_legacy_duplicate_option_errors",
+      "layer": "legacy-forwarder",
+      "outcome": "failure",
+      "v1": [],
+      "legacy": [
+        "addNote",
+        "canAddNoteWithErrorDetail"
+      ],
+      "notes": "Real disposable collection; asserts exact historical legacy error strings and relevant mutation effects. Direct forwarder calls bind public signatures; bypass HTTP and admission."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_legacy_shared_errors_keep_historical_wording",
+      "layer": "legacy-forwarder",
+      "outcome": "failure",
+      "v1": [],
+      "legacy": [
+        "apiReflect",
+        "createModel",
+        "deckNameFromId",
+        "deleteDecks",
+        "findModelsById",
+        "findModelsByName",
+        "getDecks",
+        "modelFieldNames",
+        "modelFieldRename",
+        "modelFieldSetDescription",
+        "modelFieldSetFont",
+        "modelFieldSetFontSize",
+        "modelNameFromId",
+        "modelTemplateRemove",
+        "notesInfo",
+        "storeMediaFile",
+        "updateNote",
+        "updateNoteFields",
+        "updateNoteModel",
+        "updateNoteTags"
+      ],
+      "notes": "Real disposable collection; asserts exact historical legacy error strings and relevant mutation effects. Direct forwarder calls bind public signatures; bypass HTTP and admission."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_legacy_model_conversion_missing_target_error",
+      "layer": "legacy-forwarder",
+      "outcome": "failure",
+      "v1": [],
+      "legacy": [
+        "updateNoteModel"
+      ],
+      "notes": "Real disposable collection; asserts exact historical legacy error strings and relevant mutation effects. Direct forwarder calls bind public signatures; bypass HTTP and admission."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_legacy_model_conversion_maps_lone_template_by_position",
+      "layer": "legacy-forwarder",
+      "outcome": "success",
+      "v1": [
+        "scheduling.answer",
+        "scheduling.predict"
+      ],
+      "legacy": [
+        "addNote",
+        "createModel",
+        "updateNoteModel"
+      ],
+      "notes": "Real disposable collection; asserts that a reviewed card keeps its id, ordinal, and scheduling when its lone template has no namesake in the target. Direct forwarder calls bind public signatures; bypass HTTP and admission."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_legacy_model_conversion_maps_lone_template_by_position",
+      "layer": "legacy-forwarder",
+      "outcome": "failure",
+      "v1": [],
+      "legacy": [
+        "updateNoteModel"
+      ],
+      "notes": "Real disposable collection; asserts compatibilityError and untouched cards when several source templates lack namesakes. Direct forwarder calls bind public signatures; bypass HTTP and admission."
+    },
+    {
+      "source": "tests_api/test_legacy_errors.py",
+      "case": "test_legacy_missing_entities_and_failure_sentinels",
+      "layer": "controlled-admission",
+      "outcome": "failure",
+      "v1": [],
+      "legacy": [
+        "addTags",
+        "areDue",
+        "areSuspended",
+        "cardsInfo",
+        "cardsModTime",
+        "cardsToNotes",
+        "cloneDeckConfigId",
+        "deleteMediaFile",
+        "deleteNotes",
+        "exportPackage",
+        "getDeckConfig",
+        "getEaseFactors",
+        "getIntervals",
+        "getNoteTags",
+        "getReviewsOfCards",
+        "guiAddNoteSetData",
+        "guiSelectCard",
+        "guiSelectedNotes",
+        "notesInfo",
+        "notesModTime",
+        "removeDeckConfigId",
+        "removeTags",
+        "replaceTags",
+        "retrieveMediaFile",
+        "setDeckConfigId",
+        "setEaseFactors",
+        "setSpecificValueOfCard",
+        "storeMediaFile",
+        "suspend",
+        "suspended",
+        "unsuspend",
+        "updateNoteTags"
+      ],
+      "notes": "Exact pre-rewrite legacy replies using a disposable native collection and controlled admission. Includes versions 2, 4 and 6 where parametrized; external media download is mocked, GUI windows are not opened."
+    },
+    {
+      "source": "tests_api/test_legacy_errors.py",
+      "case": "test_legacy_nested_failures_keep_item_versions_credentials_and_order",
+      "layer": "controlled-admission",
+      "outcome": "failure",
+      "v1": [],
+      "legacy": [
+        "addNote",
+        "createDeck",
+        "multi",
+        "version"
+      ],
+      "notes": "Exact pre-rewrite legacy replies using a disposable native collection and controlled admission. Includes versions 2, 4 and 6 where parametrized; external media download is mocked, GUI windows are not opened."
+    },
+    {
+      "source": "tests_api/test_legacy_errors.py",
+      "case": "test_legacy_bulk_note_failure_aggregates_errors_and_rolls_back",
+      "layer": "controlled-admission",
+      "outcome": "failure",
+      "v1": [],
+      "legacy": [
+        "addNotes"
+      ],
+      "notes": "Exact pre-rewrite legacy replies using a disposable native collection and controlled admission. Includes versions 2, 4 and 6 where parametrized; external media download is mocked, GUI windows are not opened."
+    },
+    {
+      "source": "tests_api/test_legacy_errors.py",
+      "case": "test_legacy_missing_reviewer_error",
+      "layer": "controlled-admission",
+      "outcome": "failure",
+      "v1": [],
+      "legacy": [
+        "guiAnswerCard",
+        "guiCurrentCard",
+        "guiPlayAudio",
+        "guiReviewActive",
+        "guiShowAnswer",
+        "guiShowQuestion",
+        "guiStartCardTimer"
+      ],
+      "notes": "Exact pre-rewrite legacy replies using a disposable native collection and controlled admission. Includes versions 2, 4 and 6 where parametrized; external media download is mocked, GUI windows are not opened."
+    },
+    {
+      "source": "tests_api/test_legacy_errors.py",
+      "case": "test_legacy_browser_sort_errors",
+      "layer": "controlled-admission",
+      "outcome": "failure",
+      "v1": [],
+      "legacy": [
+        "guiBrowse"
+      ],
+      "notes": "Exact pre-rewrite legacy replies using a disposable native collection and controlled admission. Includes versions 2, 4 and 6 where parametrized; external media download is mocked, GUI windows are not opened."
+    },
+    {
+      "source": "tests_api/test_legacy_errors.py",
+      "case": "test_legacy_collection_unavailable_keeps_wording_without_changing_v1",
+      "layer": "controlled-admission",
+      "outcome": "failure",
+      "v1": [],
+      "legacy": [
+        "addNote",
+        "findNotes",
+        "modelNames"
+      ],
+      "notes": "Exact pre-rewrite legacy replies using a disposable native collection and controlled admission. Includes versions 2, 4 and 6 where parametrized; external media download is mocked, GUI windows are not opened."
+    },
+    {
+      "source": "tests_api/test_legacy_errors.py",
+      "case": "test_legacy_media_source_priority_whitespace_and_download_error",
+      "layer": "controlled-admission",
+      "outcome": "failure",
+      "v1": [],
+      "legacy": [
+        "storeMediaFile"
+      ],
+      "notes": "Exact pre-rewrite legacy replies using a disposable native collection and controlled admission. Includes versions 2, 4 and 6 where parametrized; external media download is mocked, GUI windows are not opened."
+    },
+    {
+      "source": "tests_api/test_legacy_errors.py",
+      "case": "test_legacy_missing_package_retains_os_error",
+      "layer": "controlled-admission",
+      "outcome": "failure",
+      "v1": [],
+      "legacy": [
+        "importPackage"
+      ],
+      "notes": "Exact pre-rewrite legacy replies using a disposable native collection and controlled admission. Includes versions 2, 4 and 6 where parametrized; external media download is mocked, GUI windows are not opened."
+    },
+    {
+      "source": "tests_api/test_legacy_errors.py",
+      "case": "test_legacy_review_reads_create_missing_decks",
+      "layer": "controlled-admission",
+      "outcome": "failure",
+      "v1": [],
+      "legacy": [
+        "cardReviews",
+        "getLatestReviewID"
+      ],
+      "notes": "Exact pre-rewrite legacy replies using a disposable native collection and controlled admission. Includes versions 2, 4 and 6 where parametrized; external media download is mocked, GUI windows are not opened."
+    },
+    {
+      "source": "tests_api/test_legacy_errors.py",
+      "case": "test_legacy_deck_stats_create_missing_decks",
+      "layer": "controlled-admission",
+      "outcome": "failure",
+      "v1": [],
+      "legacy": [
+        "getDeckStats"
+      ],
+      "notes": "Exact pre-rewrite legacy replies using a disposable native collection and controlled admission. Includes versions 2, 4 and 6 where parametrized; external media download is mocked, GUI windows are not opened."
+    },
+    {
+      "source": "tests_api/test_legacy_errors.py",
+      "case": "test_every_legacy_action_argument_errors_match_baseline",
+      "layer": "validation-only",
+      "outcome": "not-executed",
+      "v1": [],
+      "legacy": [
+        "addNote",
+        "multi"
+      ],
+      "notes": "The frozen pre-rewrite binding snapshots cover all 122 retained actions at versions 2, 4 and 6. Missing-argument errors retain their wording in synchronous and asynchronous dispatch. Surplus keys are ignored; optional-only actions are resolved without executing their bodies."
+    },
+    {
+      "source": "tests_api/test_legacy_errors.py",
+      "case": "test_legacy_attachment_acquisition_errors_are_embedded_in_fields",
+      "layer": "controlled-admission",
+      "outcome": "failure",
+      "v1": [],
+      "legacy": [
+        "addNote",
+        "addNotes",
+        "updateNoteFields"
+      ],
+      "notes": "Disposable native collection with controlled admission; checks historical attachment error embedding, media source precedence/collision behavior, or ordered partial scheduling effects. No external network or GUI execution."
+    },
+    {
+      "source": "tests_api/test_legacy_errors.py",
+      "case": "test_legacy_note_media_priority_whitespace_and_collision",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "addNote",
+        "addNotes",
+        "storeMediaFile",
+        "updateNoteFields"
+      ],
+      "notes": "Disposable native collection with controlled admission; checks historical attachment error embedding, media source precedence/collision behavior, or ordered partial scheduling effects. No external network or GUI execution."
+    },
+    {
+      "source": "tests_api/test_legacy_errors.py",
+      "case": "test_legacy_short_ease_factor_list_retains_error_and_prior_updates",
+      "layer": "controlled-admission",
+      "outcome": "failure",
+      "v1": [],
+      "legacy": [
+        "addNote",
+        "setEaseFactors"
+      ],
+      "notes": "Disposable native collection with controlled admission; checks historical attachment error embedding, media source precedence/collision behavior, or ordered partial scheduling effects. No external network or GUI execution."
+    },
+    {
+      "source": "tests_api/test_compatibility.py",
+      "case": "test_legacy_batch_duplicate_and_native_empty_question_fallback",
+      "layer": "legacy-forwarder",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "addNote",
+        "canAddNoteWithErrorDetail"
+      ],
+      "notes": "Legacy nonempty-first-field notes with blank question templates retain native fallback cards. Native card persistence and rendered emptiness asserted; HTTP and admission bypassed."
+    },
+    {
+      "source": "tests_api/test_yomitan.py",
+      "case": "test_yomitan_conditional_questions_preserve_native_fallback_cards",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "addNote",
+        "addNotes",
+        "canAddNoteWithErrorDetail",
+        "notesInfo"
+      ],
+      "notes": "Version-2 HTTP requests create native fallback cards for nonempty expressions with blank conditional question templates, matching de6e6e1; persisted fields, numeric IDs and card count asserted. Yomitan UI not launched."
+    },
+    {
+      "source": "tests_api/test_lunatranslator.py",
+      "case": "test_luna_desktop_get_mining_model_refresh_media_and_overwrite",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "createDeck",
+        "createModel",
+        "addNote",
+        "updateModelStyling",
+        "updateModelTemplates",
+        "deleteNotes"
+      ],
+      "notes": "LunaTranslator GET requests with JSON bodies pass through real sockets, HTTP parsing and controlled admission. Native custom field order, HTML, model/template refresh, numeric IDs, duplicate messages, path media, uppercase filenames, tags and delete/recreate overwrite asserted. Client UI not launched."
+    },
+    {
+      "source": "tests_api/test_lunatranslator.py",
+      "case": "test_luna_client_without_key_retains_authentication_error",
+      "layer": "validation-only",
+      "outcome": "not-executed",
+      "v1": [],
+      "legacy": [
+        "createDeck"
+      ],
+      "notes": "LunaTranslator desktop requests do not send a key. Configured API key correctly rejects the GET request before collection execution; no deck mutation."
+    },
+    {
+      "source": "tests_api/test_asbplayer.py",
+      "case": "test_asbplayer_browser_fetch_mining_media_update_and_status",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "version",
+        "deckNames",
+        "modelNames",
+        "modelFieldNames",
+        "createDeck",
+        "addNote",
+        "findNotes",
+        "notesInfo",
+        "findCards",
+        "cardsInfo",
+        "notesModTime",
+        "cardsModTime",
+        "areSuspended",
+        "storeMediaFile",
+        "updateNoteFields",
+        "addTags"
+      ],
+      "notes": "Six combinations of asbplayer website/legacy website/extension origins and optional API keys. Private-network preflight, text/plain JSON POSTs, native mining/status, normalized media filenames and update-null acknowledgement asserted, with unchanged scheduling. Browser fetch engine and asbplayer UI not launched."
+    },
+    {
+      "source": "tests_api/test_asbplayer.py",
+      "case": "test_asbplayer_unconfigured_origin_can_preflight_but_cannot_mutate",
+      "layer": "validation-only",
+      "outcome": "not-executed",
+      "v1": [],
+      "legacy": [
+        "createDeck"
+      ],
+      "notes": "An unconfigured asbplayer web origin can preflight but remains denied on POST; preflight does not authorize writes. Native collection is inspected, createDeck body is not executed."
+    },
+    {
+      "source": "tests_api/test_gsm.py",
+      "case": "test_gsm_full_path_media_names_keep_native_legacy_normalization",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "storeMediaFile"
+      ],
+      "notes": "Windows and POSIX full-path filename arguments retain native illegal-character stripping and lowercase names. Exact response, bytes, and same-data reuse asserted through HTTP wrapper; desktop GSM itself is not run."
+    },
+    {
+      "source": "tests_api/test_gsm.py",
+      "case": "test_gsm_desktop_enrichment_polling_and_native_review_sync",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "addNote",
+        "findNotes",
+        "notesInfo",
+        "findCards",
+        "cardsInfo",
+        "storeMediaFile",
+        "updateNoteFields",
+        "addTags",
+        "removeTags",
+        "getReviewsOfCards"
+      ],
+      "notes": "Replay GSM desktop enrichment of a Yomitan-created note and cache lookups. Native review answers precede update; scheduling preserved, legacy review dictionary keys/types and missing-record sentinels asserted. No GSM OCR, recording or database processes."
+    },
+    {
+      "source": "tests_api/test_gsm.py",
+      "case": "test_gsm_overlay_discovery_and_index_keep_nested_envelopes",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "multi",
+        "deckNames",
+        "modelNames",
+        "modelFieldNames",
+        "modelNamesAndIds",
+        "findNotes",
+        "canAddNotesWithErrorDetail"
+      ],
+      "notes": "GSM overlay version-6 discovery/index multi calls with and without API keys. Numeric model IDs, per-child envelopes, mature queries and addability results asserted. Overlay UI not launched."
+    },
+    {
+      "source": "tests_api/test_gsm.py",
+      "case": "test_gsm_five_hundred_note_and_card_cache_batches_are_not_truncated",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "addNotes",
+        "findNotes",
+        "notesInfo",
+        "cardsInfo"
+      ],
+      "notes": "Native 500-note/card cache requests preserve order and all nested field values without truncation; matches GSM cron batch sizes. No GSM database process."
+    },
+    {
+      "source": "tools/smoke_gui.py",
+      "case": "mining-clients",
+      "layer": "http-gui",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "createDeck",
+        "createModel",
+        "addNote",
+        "updateModelStyling",
+        "updateModelTemplates",
+        "deleteNotes",
+        "storeMediaFile"
+      ],
+      "notes": "Disposable real Anki GUI: actual HTTP GET LunaTranslator first-add/model-refresh/duplicate/media/overwrite flow, GSM POST full-path media, and blank conditional question fallback. Native Qt/task completion and persistence checked. LunaTranslator/GSM clients themselves are not launched."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_legacy_large_search_releases_snapshot",
+      "layer": "native-service",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "findCards",
+        "findNotes"
+      ],
+      "notes": "Native collections with 10,001 notes/cards; repeated legacy searches return every matching ID across more than 100 default-sized pages and leave no retained cursors."
+    },
+    {
+      "source": "tests_api/test_runtime.py",
+      "case": "test_search_cursor_capacity_preserves_other_snapshots",
+      "layer": "native-service",
+      "outcome": "success",
+      "v1": [
+        "notes.search"
+      ],
+      "legacy": [],
+      "notes": "At the 100-snapshot capacity, new searches fail while existing searches can advance without evicting other snapshots; completing a search frees capacity."
+    },
+    {
+      "source": "tests_api/test_jiten.py",
+      "case": "test_cards_info_field_projection_preserves_legacy_values",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "cardsInfo"
+      ],
+      "notes": "Filtered and unfiltered records agree for native cards; checks null, empty, selective, duplicate and unknown properties, missing IDs, duplicate card IDs and empty probes."
+    },
+    {
+      "source": "tests_api/test_jiten.py",
+      "case": "test_cards_info_rejects_invalid_field_filters",
+      "layer": "controlled-admission",
+      "outcome": "failure",
+      "v1": [],
+      "legacy": [
+        "cardsInfo"
+      ],
+      "notes": "HTTP admission rejects malformed field selectors even with no card IDs."
+    },
+    {
+      "source": "tests_api/test_jiten.py",
+      "case": "test_jiten_large_filtered_import_and_review_pages",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "cardsInfo",
+        "findCards",
+        "getReviewsOfCards"
+      ],
+      "notes": "Native 2,000-card Jiten batch returns selected nested fields without rendering, predictions, token churn or card mutation. Numeric/string IDs return all 12,000 raw reviews across more than 100 pages and release snapshots."
+    },
+    {
+      "source": "tests_api/test_jiten.py",
+      "case": "test_jiten_versioned_media_batch",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "storeMediaFile",
+        "multi",
+        "retrieveMediaFile"
+      ],
+      "notes": "Versioned Jiten media subrequests retain envelopes, base64 content and false for missing files."
+    },
+    {
+      "source": "tests_api/test_jiten.py",
+      "case": "test_jiten_field_probe_with_browser_origin_and_key",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "cardsInfo"
+      ],
+      "notes": "Jiten-origin field probe succeeds through controlled HTTP admission with and without an API key."
+    },
+    {
+      "source": "tests_api/test_extended.py",
+      "case": "test_extended_card_contracts_over_http",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "cardsDetails",
+        "cardsInfo",
+        "findCards"
+      ],
+      "notes": "Real disposable collection values through controlled HTTP admission, including FSRS metrics, compact modes, duplicate/missing cards and upstream projection. Native batching is covered separately on the rebuilt core."
+    },
+    {
+      "source": "tests_api/test_extended.py",
+      "case": "test_grade_now_native_effect_and_change_notifications",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "gradeNow"
+      ],
+      "notes": "Real scheduler effect and review-log count through controlled HTTP admission; checks post-write notification and stale prediction rejection."
+    },
+    {
+      "source": "tests_api/test_extended.py",
+      "case": "test_reposition_preserves_order_skips_and_notifies",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "repositionNewCards"
+      ],
+      "notes": "Native new-card due positions, ordering, duplicate/missing/reviewed-card handling and post-write notifications through controlled HTTP admission."
+    },
+    {
+      "source": "tests_api/test_extended.py",
+      "case": "test_fsrs7_answer_waits_for_render_and_cleans_hooks",
+      "layer": "mocked-gui",
+      "outcome": "not-executed",
+      "v1": [
+        "reviewer.showAnswer"
+      ],
+      "legacy": [],
+      "notes": "Controlled readiness events check deferred completion, timeout, reviewer exit, stale-token rejection and hook cleanup. Actual FSRS7 question/answer transitions are covered by the disposable reviewer GUI scenario."
+    }
+  ],
+  "unreferenced": {
+    "v1": [],
+    "legacy": []
+  },
+  "ui_deferrals": [
+    {
+      "protocol": "v1",
+      "name": "reviewer.playAudio",
+      "reason": "Audible playback depends on the OS audio device and external player; proving sound output would require a separate audio harness.",
+      "alternative": "Retain the real reviewer call on a silent card; actual audible playback remains unvalidated."
+    },
+    {
+      "protocol": "legacy",
+      "name": "guiPlayAudio",
+      "reason": "Audible playback depends on the OS audio device and external player; proving sound output would require a separate audio harness.",
+      "alternative": "Retain the real reviewer call on a silent card; actual audible playback remains unvalidated."
+    }
+  ]
+}

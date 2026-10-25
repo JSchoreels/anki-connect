@@ -1,4 +1,5 @@
 {
     "package": "1635024181",
-    "name": "AnkiConnect Extended"
+    "name": "AnkiConnect Extended",
+    "conflicts": ["AnkiConnectDev", "2055492159"]
 }
