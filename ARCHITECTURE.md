@@ -26,6 +26,13 @@ metadata logging, and starts a retained Qt timer. Importing as `plugin` in tests
 skips automatic startup. The timer advances socket reads/writes without blocking
 on API completion. Each connection closes after its reply drains.
 
+Repeated `Connection` headers are combined as a list for compatibility with older
+HTTP proxies. Other duplicate headers remain rejected, including `Content-Length`,
+`Origin`, and `Authorization`; transfer-encoded requests remain unsupported.
+Every reply advertises `Connection: close`. Transport errors (400, 413, and 500)
+also include `Content-Type: application/json` with their existing empty bodies,
+so proxies that require a content type can forward the error without crashing.
+
 After the listener starts, Anki-Connect uses Anki's macOS helper to suppress App
 Nap for the process lifetime, including profile switches. The native helper
 retains the activity token and allows idle system sleep. Other platforms skip

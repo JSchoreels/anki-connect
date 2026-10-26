@@ -14,6 +14,11 @@ class HttpError(ValueError):
         self.status = status
 
 
+def _http_error_response(status):
+    return ('HTTP/1.1 ' + status + '\r\nContent-Type: application/json\r\n'
+            'Connection: close\r\nContent-Length: 0\r\n\r\n').encode()
+
+
 class WebRequest:
     def __init__(self, method, headers, body, path=b'/'):
         self.method, self.headers, self.body, self.path = method, headers, body, path
@@ -54,14 +59,14 @@ class WebClient:
                         self.pending = False
                         self.started = time.monotonic()
                         if self.sock is not None:
-                            self.writeBuff = source.value if not source.error else b'HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\n\r\n'
+                            self.writeBuff = source.value if not source.error else _http_error_response('500 Internal Server Error')
                     (reply if isinstance(reply, Deferred) else completed(reply)).then(finish)
             except BlockingIOError:
                 pass
             except HttpError as error:
-                self.writeBuff = ('HTTP/1.1 ' + error.status + '\r\nContent-Length: 0\r\n\r\n').encode()
+                self.writeBuff = _http_error_response(error.status)
             except (ValueError, UnicodeError):
-                self.writeBuff = b'HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n'
+                self.writeBuff = _http_error_response('400 Bad Request')
             except OSError:
                 self.close()
                 return False
@@ -101,9 +106,15 @@ class WebClient:
         for line in lines[1:]:
             key, value = line.split(b':', 1)
             key = key.strip().lower()
+            value = value.strip()
             if key in headers:
-                raise ValueError('Duplicate header')
-            headers[key] = value.strip()
+                # Connection is a list field; older proxies may emit both
+                # close and keep-alive. Every reply still closes this socket.
+                if key != b'connection':
+                    raise ValueError('Duplicate header')
+                headers[key] += b', ' + value
+            else:
+                headers[key] = value
         if b'transfer-encoding' in headers:
             raise ValueError('Chunked requests unsupported')
         size = int(headers.get(b'content-length', b'0'))
