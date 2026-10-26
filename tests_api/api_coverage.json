@@ -2060,6 +2060,45 @@
       ],
       "legacy": [],
       "notes": "Controlled readiness events check deferred completion, timeout, reviewer exit, stale-token rejection and hook cleanup. Actual FSRS7 question/answer transitions are covered by the disposable reviewer GUI scenario."
+    },
+    {
+      "source": "tests_api/test_editor_writes.py",
+      "case": "test_note_update_waits_for_editor_save_and_reload",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [
+        "notes.update"
+      ],
+      "legacy": [
+        "updateNoteFields"
+      ],
+      "notes": "Real disposable collection with controlled classic/Svelte editor callbacks: pending user content saves before normalized legacy or strict v1 field patches; API completion and restored input wait for reload. Failure/session/editor-change and overlap cases in the same module check that rejected writes are never queued or replayed."
+    },
+    {
+      "source": "tests_api/test_editor_writes.py",
+      "case": "test_legacy_tag_update_uses_the_same_editor_coordination",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "addTags"
+      ],
+      "notes": "A real note retains a pending user tag and receives the mining tag after the editor save; the refreshed editor has both tags and input is restored."
+    },
+    {
+      "source": "tools/smoke_gui.py",
+      "case": "editor-writes",
+      "layer": "real-gui",
+      "outcome": "success",
+      "v1": [
+        "notes.update"
+      ],
+      "legacy": [
+        "storeMediaFile",
+        "updateNoteFields",
+        "addTags"
+      ],
+      "notes": "Disposable profiles exercise the custom Show card editor, classic browser and Svelte browser. Pending fields survive mining media/tag updates and v1 patches; a subsequent editor save and close retain the API media and fields."
     }
   ],
   "unreferenced": {

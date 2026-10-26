@@ -267,16 +267,14 @@ class Runtime:
             _, session = self.capture(params.get('session'))
         else:
             session = self.session
-        if meta['effect'] in ('write', 'advancedWrite'):
-            self.gui.guard(method, params)
         if method in GUI_METHODS and meta['scope'] == 'collection' and self.mw._background_op_count:
             raise ApiError('busy', 'A collection operation is active.')
-        def start(key=None):
+        def start(key=None, prepared_editor=None):
             self.require_capability(method)
             if self.lifecycle_active and (meta['scope'] == 'collection' or meta['effect'] == 'lifecycle'):
                 raise ApiError('busy', 'Collection lifecycle operation is active.')
             if meta['effect'] in ('write', 'advancedWrite'):
-                self.gui.guard(method, params)
+                self.gui.guard(method, params, prepared_editor)
             if meta['scope'] == 'collection':
                 self.capture(session)
                 if method in GUI_METHODS and self.mw._background_op_count:
@@ -286,9 +284,14 @@ class Runtime:
                 return value if isinstance(value, Deferred) else completed(value)
             if method == 'media.store':
                 return self.acquire_media(params, session)
-            return self.background(lambda service: service.execute(method, params), session)
+            return self.background(lambda service: service.execute(method, params), session,
+                                   initiator=self.gui.write_initiator(prepared_editor))
         if meta['completion'] == 'operation':
+            if meta['effect'] in ('write', 'advancedWrite'):
+                self.gui.guard(method, params)
             return completed(self.operations.submit(method, session, start))
+        if meta['effect'] in ('write', 'advancedWrite'):
+            return self.gui.note_write([method], params, lambda editor: start(prepared_editor=editor))
         return start()
 
     def await_value(self, future):

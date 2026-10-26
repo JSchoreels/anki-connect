@@ -146,14 +146,8 @@ class AnkiConnect:
                 return methodName, Legacy.normalize_params(methodName, dict(bound.arguments))
         raise Exception('unsupported action')
 
-    def guard_legacy(self, name, params):
-        gui_action = name.startswith('gui') and name != 'guiExitAnki'
-        if (gui_action or name == 'reloadCollection') and getattr(self.window(), '_background_op_count', 0):
-            from .protocol import ApiError
-            raise ApiError('busy', 'A collection operation is active.')
-        if self.runtime.lifecycle_active and name not in ('version', 'requestPermission', 'apiReflect', 'getProfiles', 'getActiveProfile'):
-            from .protocol import ApiError
-            raise ApiError('busy', 'Collection lifecycle operation is active.')
+    @staticmethod
+    def legacy_guard_params(name, params):
         converted = dict(params)
         note = params.get('note')
         if isinstance(note, dict):
@@ -163,9 +157,20 @@ class AnkiConnect:
         converted['ids'] = [str(id) for id in (params.get('notes') or [converted.get('id')])]
         if name == 'replaceTagsInAllNotes':
             converted['allNotes'] = True
+        return converted
+
+    def guard_legacy(self, name, params, prepared_editor=None):
+        gui_action = name.startswith('gui') and name != 'guiExitAnki'
+        if (gui_action or name == 'reloadCollection') and getattr(self.window(), '_background_op_count', 0):
+            from .protocol import ApiError
+            raise ApiError('busy', 'A collection operation is active.')
+        if self.runtime.lifecycle_active and name not in ('version', 'requestPermission', 'apiReflect', 'getProfiles', 'getActiveProfile'):
+            from .protocol import ApiError
+            raise ApiError('busy', 'Collection lifecycle operation is active.')
+        converted = self.legacy_guard_params(name, params)
         for target in LEGACY_TARGETS.get(name, []):
             if target in SCHEMA['x-methods'] and SCHEMA['x-methods'][target]['effect'] in ('write', 'advancedWrite'):
-                self.runtime.gui.guard(target, converted)
+                self.runtime.gui.guard(target, converted, prepared_editor)
 
     def legacy(self, name, params):
         params = Legacy.normalize_params(name, params)
@@ -241,29 +246,34 @@ class AnkiConnect:
             if name != 'requestPermission' and request.get('key') != util.setting('apiKey'):
                 raise Exception('valid api key must be provided')
             name, params = self.resolve_action(name, version, request.get('params', {}))
-            self.guard_legacy(name, params)
-            if name == 'multi':
-                actions = params['actions']
-                if depth == 0:
-                    self.validate_multi(actions)
-                pending = Deferred()
-                results = []
-                def step(index):
-                    if index == len(actions):
-                        pending.resolve(results)
-                    else:
-                        self.handler_async(actions[index], True, depth + 1).then(lambda source: advance(index, source))
-                def advance(index, source):
-                    results.append(source.value)
-                    self.runtime.schedule(lambda: step(index + 1))
-                step(0)
-            elif name.startswith('gui') or name in ('version', 'requestPermission', 'apiReflect', 'getProfiles', 'getActiveProfile', 'loadProfile', 'sync', 'reloadCollection'):
-                value = Legacy(self).call(name, params)
-                def admitted(value):
-                    return value.pending.map(value.project) if isinstance(value, Accepted) and barrier else value.value if isinstance(value, Accepted) else value
-                pending = value.map(admitted) if isinstance(value, Deferred) else completed(value).map(admitted)
-            else:
-                pending = self.runtime.background(lambda service: Legacy(self, service).call(name, params))
+            def execute(prepared_editor=None):
+                self.guard_legacy(name, params, prepared_editor)
+                if name == 'multi':
+                    actions = params['actions']
+                    if depth == 0:
+                        self.validate_multi(actions)
+                    pending = Deferred()
+                    results = []
+                    def step(index):
+                        if index == len(actions):
+                            pending.resolve(results)
+                        else:
+                            self.handler_async(actions[index], True, depth + 1).then(lambda source: advance(index, source))
+                    def advance(index, source):
+                        results.append(source.value)
+                        self.runtime.schedule(lambda: step(index + 1))
+                    step(0)
+                    return pending
+                if name.startswith('gui') or name in ('version', 'requestPermission', 'apiReflect', 'getProfiles', 'getActiveProfile', 'loadProfile', 'sync', 'reloadCollection'):
+                    value = Legacy(self).call(name, params)
+                    def admitted(value):
+                        return value.pending.map(value.project) if isinstance(value, Accepted) and barrier else value.value if isinstance(value, Accepted) else value
+                    return value.map(admitted) if isinstance(value, Deferred) else completed(value).map(admitted)
+                return self.runtime.background(lambda service: Legacy(self, service).call(name, params),
+                                               initiator=self.runtime.gui.write_initiator(prepared_editor))
+            targets = [target for target in LEGACY_TARGETS.get(name, [])
+                       if SCHEMA['x-methods'][target]['effect'] in ('write', 'advancedWrite')]
+            pending = self.runtime.gui.note_write(targets, self.legacy_guard_params(name, params), execute)
             reply = Deferred()
             pending.then(lambda source: reply.resolve(format_exception_reply(version, source.error) if source.error else format_success_reply(version, source.value)))
             return reply

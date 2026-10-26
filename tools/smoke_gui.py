@@ -2,7 +2,7 @@
 """Real-GUI smoke checks, run by tools/test.sh/tools/test.ps1 by default; uses disposable Anki profiles.
 
 Run with the pinned environment and a working display:
-    python tools/smoke_gui.py [all|editors|browser|browser-startup|custom|reviewer|imports|profiles|colpkg|obsidian|mining-clients|exit|legacy-exit]
+    python tools/smoke_gui.py [all|editors|editor-writes|browser|browser-startup|custom|reviewer|imports|profiles|colpkg|obsidian|mining-clients|exit|legacy-exit]
 
 No sync credentials are used. Profiles/files remain in the OS temp directory for diagnostics.
 Processes exit after checks to isolate native Qt/WebEngine teardown; application
@@ -17,7 +17,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 # Each scenario runs in a fresh process/profile to isolate Qt WebEngine teardown.
 scenario = sys.argv[1] if len(sys.argv) > 1 else 'all'
-scenarios = ['editors', 'browser', 'browser-startup', 'custom', 'reviewer', 'imports', 'profiles', 'colpkg', 'obsidian', 'mining-clients', 'exit', 'legacy-exit']
+scenarios = ['editors', 'editor-writes', 'browser', 'browser-startup', 'custom', 'reviewer', 'imports', 'profiles', 'colpkg', 'obsidian', 'mining-clients', 'exit', 'legacy-exit']
 if scenario == 'all':
     import subprocess
     failures = []
@@ -210,6 +210,71 @@ try:
                 return aqt.dialogs.allClosed()
             wait_until(add_closed)
             print('PASS close Add', flush=True)
+    if scenario == 'editor-writes':
+        import base64
+        import json
+        from anki.collection import ExperimentFlag
+        call('noteTypes.create', name='Mining editor', fields=[{'name': name} for name in ('Front', 'Back', 'Audio Sentence')],
+             templates=[{'name': 'Card', 'questionHtml': '{{Front}}', 'answerHtml': '{{Back}}{{Audio Sentence}}'}])
+        for variant in ['custom', 'legacy-browser', 'svelte-browser']:
+            aqt.mw.col._experiments[str(ExperimentFlag.SVELTE_EDITOR)] = variant == 'svelte-browser'
+            mined = call('notes.create', noteType={'name': 'Mining editor'}, deck={'name': 'Default'},
+                         fields={'Front': variant, 'Back': 'dictionary definition'})
+            if variant == 'custom':
+                call('editors.openNote', noteId=mined['noteId'])
+                dialog = aqt.dialogs._dialogs[Edit.dialog_registry_tag][1]
+            else:
+                call('browser.open', query='nid:' + mined['noteId'])
+                dialog = owner.runtime.gui.browser()
+            assert hasattr(dialog.editor, 'note') == (variant != 'svelte-browser')
+            ready = 'typeof saveNow === "function"'
+            if variant == 'svelte-browser':
+                ready = '(() => { try { return String(getNoteInfo().id) === ' + json.dumps(mined['noteId']) + ' && getNoteInfo().fields.length === 3; } catch { return false; } })()'
+            # Submit before the editor's typing timer saves this user edit.
+            edited = 'pending user edit in ' + variant
+            result(owner.runtime.gui.javascript(dialog.editor,
+                   'setFields(["Front", "Back", "Audio Sentence"], ' +
+                   json.dumps([edited, 'dictionary definition', '']) + '); return true;',
+                   ready=ready))
+            media = 'mining-' + variant + '.txt'
+            assert old('storeMediaFile', filename=media, data=base64.b64encode(b'media test').decode()) == media
+            pending = owner.handler_async({'action': 'updateNoteFields', 'version': 6,
+                                           'params': {'note': {'id': int(mined['noteId']),
+                                                              'fields': {'Audio Sentence': '[sound:' + media + ']'}}}})
+            assert not dialog.isEnabled() and not pending.done
+            reply = result(pending)
+            assert reply == {'result': None, 'error': None}, reply
+            assert dialog.isEnabled()
+            old('addTags', notes=[int(mined['noteId'])], tags='asbplayer')
+            call('notes.update', id=mined['noteId'], patch={'fields': {'Back': 'updated definition'}})
+            # Saving the refreshed editor again must not erase the API's media.
+            result(owner.runtime.gui.javascript(dialog.editor, 'await saveNow(); return true;',
+                                                ready='typeof saveNow === "function"'))
+            wait_until(lambda: aqt.mw._background_op_count == 0)
+            actual = aqt.mw.col.get_note(int(mined['noteId']))
+            assert actual.fields == [edited, 'updated definition', '[sound:' + media + ']'], actual.fields
+            assert 'asbplayer' in actual.tags
+            from plugin.protocol import ApiError, completed
+            native_javascript = owner.runtime.gui.javascript
+            def fail_refresh(editor, code, **kwargs):
+                if code in ('return true;', 'await reloadNote(); return true;'):
+                    return completed(error=ApiError('ioError', 'Forced refresh failure'))
+                return native_javascript(editor, code, **kwargs)
+            owner.runtime.gui.javascript = fail_refresh
+            try:
+                reply = result(owner.handler_async({'action': 'updateNoteFields', 'version': 6,
+                               'params': {'note': {'id': int(mined['noteId']), 'fields': {'Back': 'after refresh failure'}}}}))
+                assert reply['error'].startswith('The editor could not refresh after the API write.'), reply
+                assert dialog.isEnabled() and not dialog.editor.widget.isEnabled()
+            finally:
+                owner.runtime.gui.javascript = native_javascript
+            actual = aqt.mw.col.get_note(int(mined['noteId']))
+            assert actual.fields == [edited, 'after refresh failure', '[sound:' + media + ']']
+            aqt.dialogs.closeAll(onsuccess=lambda: None)
+            wait_until(aqt.dialogs.allClosed)
+            assert aqt.mw.col.get_note(int(mined['noteId'])).fields == actual.fields
+            print('PASS mining updates preserve pending edits and survive editor save/close', variant, flush=True)
+            print('PASS failed refresh blocks stale editing and permits safe close', variant, flush=True)
     if scenario == 'browser':
         call('noteTypes.editStructure', noteType={'name': 'Basic'}, edits=[{'op': 'addTemplate',
              'template': {'name': 'Reverse compatibility', 'questionHtml': '{{Back}}', 'answerHtml': '{{Front}}'}}])

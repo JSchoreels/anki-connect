@@ -13915,10 +13915,12 @@
       "completion": "completed",
       "undo": "single",
       "errors": [
+        "busy",
         "collectionUnavailable",
         "editorConflict",
         "internalError",
         "invalidParams",
+        "ioError",
         "notFound",
         "staleSession",
         "validationFailed"
@@ -14082,10 +14084,12 @@
       "completion": "completed",
       "undo": "perItem",
       "errors": [
+        "busy",
         "collectionUnavailable",
         "editorConflict",
         "internalError",
         "invalidParams",
+        "ioError",
         "notFound",
         "staleSession"
       ],
@@ -14110,10 +14114,12 @@
       "completion": "completed",
       "undo": "perItem",
       "errors": [
+        "busy",
         "collectionUnavailable",
         "editorConflict",
         "internalError",
         "invalidParams",
+        "ioError",
         "notFound",
         "staleSession"
       ],
@@ -14138,10 +14144,12 @@
       "completion": "completed",
       "undo": "single",
       "errors": [
+        "busy",
         "collectionUnavailable",
         "editorConflict",
         "internalError",
         "invalidParams",
+        "ioError",
         "staleSession"
       ],
       "notes": "Exactly one selector: noteIds or allNotes=true. Never interpret an omitted selector as all notes."

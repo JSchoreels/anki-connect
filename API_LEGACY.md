@@ -146,7 +146,7 @@ its tags with `one` and `two`, returning `{"result":null,"error":null}` on succe
 ```
 
 API v1 retains its strict input validation. Authentication keys, origin permissions,
-editor/lifecycle guards, media limits, and protected writes keep their existing rules.
+lifecycle guards, media limits, and protected writes keep their existing rules.
 Both endpoints use the same collection services. Some unsafe historical behavior
 now fails explicitly or follows corrected native behavior:
 
@@ -155,7 +155,11 @@ now fails explicitly or follows corrected native behavior:
 - `removeEmptyNotes` returns a compatibility error. Use v1 `notes.findEmpty` with
   an explicit criterion and delete specific note IDs after reviewing the result.
 - Unsupported preset changes fail instead of being silently ignored.
-- Affected open editors must be closed before collection writes, even when saved.
+- Note-field and note-scoped tag updates save pending edits in one affected open
+  editor, apply the API changes, and refresh it before replying. Supplied API
+  properties take precedence; edits in omitted fields are preserved. Input pauses
+  during synchronization. Other writes, all-note tag replacements and multiple
+  affected editor windows still require closing those editors.
 - `relearnCards` performs real failed reviews and requires compatible review cards.
   It changes lapse counts and history.
 
@@ -3042,7 +3046,7 @@ For an existing duplicate, the result entry is:
 
 ### `updateNoteFields`
 
-Update supplied fields of the note identified by `note.id`, with optional inline media. Field names use the shared legacy matching rules; unknown names are ignored. Attachments can target fields omitted from the text patch and append to their existing contents. An affected open editor causes an error rather than a silent overwrite.
+Update supplied fields of the note identified by `note.id`, with optional inline media. Field names use the shared legacy matching rules; unknown names are ignored. Attachments can target fields omitted from the text patch and append to their existing contents. One affected open editor saves pending edits and refreshes after the update, so asbplayer can attach sentence audio while “Show card” is open. Multiple affected editor windows still cause an explicit conflict.
 
 **Parameters:** `updateNoteFields(note)`
 
@@ -3050,7 +3054,7 @@ Update supplied fields of the note identified by `note.id`, with optional inline
 
 **Completion:** completed.
 
-**Behavior:** post-write notification and undo; editorConflict replaces silent overwrite.
+**Behavior:** post-write notification and undo; pending editor saves and refresh finish before the reply. Concurrent API updates to the same editor return an error; writes are not replayed automatically.
 
 **v1 equivalent:** [notes.update](API_V1.md#notesupdate), [media.store](API_V1.md#mediastore).
 

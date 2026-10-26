@@ -3,8 +3,11 @@ import json
 import uuid
 import time
 
-from .protocol import ApiError, Deferred, timestamp
+from .protocol import ApiError, Deferred, completed, timestamp
 from .services import RATINGS, entity_id
+
+
+EDITOR_WRITES = {'notes.update', 'tags.add', 'tags.remove', 'tags.replace'}
 
 
 class Gui:
@@ -12,6 +15,7 @@ class Gui:
         self.runtime = runtime
         self.editors = {}
         self.operation_id = None
+        self.updating_editors = set()
 
     @property
     def mw(self):
@@ -621,20 +625,128 @@ class Gui:
         self.mw.taskman.with_progress(lambda: col.sync_collection(auth, includeMedia), synced)
         return pending
 
-    def guard(self, method, params):
-        """Reject affected open editors, including changes still pending in JS."""
+    @staticmethod
+    def editor_note_id(editor):
+        note = getattr(editor, 'note', None)
+        return note.id if note is not None else getattr(editor, 'nid', None)
+
+    @staticmethod
+    def write_initiator(editor):
+        # Classic dialogs compare the editor; Svelte webviews compare their
+        # parent widget. The synchronized editor is explicitly reloaded once.
+        return editor.widget if editor is not None and not hasattr(editor, 'note') else editor
+
+    def affected_editors(self, method, params):
         import aqt
+        affected_editors = []
         if method.startswith(('scheduling.', 'cards.')):
-            return
+            return affected_editors
         for _, dialog in aqt.dialogs._dialogs.values():
             if dialog is None or not hasattr(dialog, 'editor'):
                 continue
             editor = dialog.editor
-            note = getattr(editor, 'note', None)
-            note_id = note.id if note is not None else getattr(editor, 'nid', None)
+            note_id = self.editor_note_id(editor)
             affected = method.startswith(('noteTypes.', 'collection.', 'packages.', 'advanced.')) or method == 'application.importFile'
             ids = params.get('ids', params.get('noteIds', [params.get('id')]))
             if method.startswith(('notes.', 'tags.')):
                 affected = bool(note_id) and (str(note_id) in ids or params.get('allNotes', False))
-            if affected:
+            if affected and not any(existing is editor for _, existing in affected_editors):
+                affected_editors.append((dialog, editor))
+        return affected_editors
+
+    def guard(self, method, params, prepared_editor=None):
+        """Only a request that saved and locked its editor may write through it."""
+        for _, editor in self.affected_editors(method, params):
+            if not (method in EDITOR_WRITES and editor is prepared_editor and id(editor) in self.updating_editors):
                 raise ApiError('editorConflict', 'Close the affected editor before this API write, even if its content is saved.')
+
+    def note_write(self, methods, params, start):
+        """Save one affected editor, keep it locked through native completion, then reload it."""
+        writes = set(methods) - {'media.store'}
+        if self.runtime.lifecycle_active or not writes or not writes <= EDITOR_WRITES or params.get('allNotes'):
+            return start(None)
+        method = next(iter(writes))
+        affected = self.affected_editors(method, params)
+        if not affected:
+            return start(None)
+        dialog, editor = affected[0]
+        if id(editor) in self.updating_editors:
+            raise ApiError('busy', 'An API update is already synchronizing this note editor.')
+        # Saving one editor can reload another editor of the same note. Keep the
+        # existing guard when more than one window has potentially pending edits.
+        if (len(affected) != 1 or not callable(getattr(dialog, 'setEnabled', None))
+                or not callable(getattr(dialog, 'isEnabled', None)) or not getattr(editor, 'web', None)
+                or not callable(getattr(getattr(editor, 'widget', None), 'setEnabled', None))):
+            self.guard(method, params)
+        session = self.runtime.session
+        note_id = self.editor_note_id(editor)
+        focus = editor.currentField
+        enabled = dialog.isEnabled()
+        result = Deferred()
+        admitted = [False]
+        self.updating_editors.add(id(editor))
+        self.mw._increase_background_ops()
+
+        def release(source):
+            if result.done:
+                return
+            self.updating_editors.discard(id(editor))
+            try:
+                dialog.setEnabled(enabled)
+            except RuntimeError:
+                pass  # Qt may have destroyed a window while a callback was pending.
+            finally:
+                self.mw._decrease_background_ops()
+            result.resolve(source.value, source.error)
+
+        def refreshed(source, refresh):
+            if refresh.error:
+                # Do not let a stale webview overwrite an already applied API
+                # patch on its next typing save. The window can still be closed.
+                try:
+                    editor.widget.setEnabled(False)
+                except RuntimeError:
+                    pass
+                release(completed(error=ApiError('ioError',
+                    'The editor could not refresh after the API write. Close and reopen it before editing.',
+                    {'writeCompleted': source.error is None, 'refreshError': str(refresh.error)})))
+            else:
+                release(source)
+
+        def finished(source):
+            if self.runtime.session != session or self.editor_note_id(editor) != note_id:
+                release(source)
+                return
+            try:
+                # Native notifications also reload editors. Explicit completion
+                # here keeps input disabled until the webview has fresh content.
+                if hasattr(editor, 'note'):
+                    reload = self.runtime.background(lambda service: service.note(str(note_id)), session).map(
+                        lambda note: editor.set_note(note, focusTo=focus))
+                    reload = reload.map(lambda _: self.javascript(editor, 'return true;', ready='typeof saveNow === "function"'))
+                else:
+                    reload = self.javascript(editor, 'await reloadNote(); return true;', ready='typeof reloadNote === "function"')
+                reload.then(lambda refresh: refreshed(source, refresh))
+            except Exception as error:
+                refreshed(source, completed(error=error))
+
+        def saved(_):
+            self.runtime.capture(session)
+            if self.editor_note_id(editor) != note_id or self.affected_editors(method, params) != affected:
+                raise ApiError('editorConflict', 'The affected note editor changed while saving.')
+            pending = start(editor)
+            admitted[0] = True
+            return pending
+
+        try:
+            dialog.setEnabled(False)
+            ready = 'typeof saveNow === "function"'
+            if not hasattr(editor, 'note'):
+                ready += ' && (() => { try { return String(getNoteInfo().id) === ' + json.dumps(str(note_id)) + '; } catch { return false; } })()'
+            pending = self.javascript(editor, 'document.activeElement?.blur(); await saveNow(); return true;',
+                                      ready=ready).map(saved)
+            # A failed save never admits the write or reloads over pending input.
+            pending.then(lambda source: finished(source) if admitted[0] else release(source))
+        except Exception as error:
+            release(completed(error=error))
+        return result

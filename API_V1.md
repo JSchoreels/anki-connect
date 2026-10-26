@@ -176,8 +176,11 @@ retry a write automatically after losing its response.
 - Bulk results use `{"items":[...]}` with the original `index` and either `result`
   or `error` for each item. Shape errors reject the whole request. Item failures
   are otherwise independent unless the method documents atomic behavior.
-- Affected editors must be closed before collection writes, including saved
-  editors. An operation may still require user interaction in Anki.
+- `notes.update` and note-scoped `tags.add`, `tags.remove`, and `tags.replace`
+  save and refresh one affected open editor. Pending edits in omitted fields are
+  preserved; supplied API properties take precedence. Input pauses until refresh
+  completes. Other writes and multiple affected editor windows still require
+  closing those editors. An operation may require user interaction in Anki.
 - Timestamps use RFC 3339 UTC. Intervals include units. Scheduling day numbers
   belong to Anki's collection epoch, rather than Unix time. SM-2 ease is in
   permille; FSRS stability and difficulty are separate values.
@@ -1055,6 +1058,13 @@ atomic=true validates the full set including within-batch duplicates, then uses 
 
 Apply fields and tags together in one native note update.
 
+An affected classic/custom or Svelte browser editor saves pending edits before
+the update and refreshes before the reply completes. This lets mining clients
+attach media while the note is open. Multiple affected editors return
+`editorConflict`; an editor already synchronizing an API update returns `busy`.
+If refresh fails, `ioError` details include `writeCompleted`; reopen the editor
+before editing again. A refresh failure does not roll back an applied update.
+
 **Scope:** collection. **Completion:** completed. **Undo:** `single`.
 
 **Parameters**
@@ -1069,7 +1079,7 @@ Apply fields and tags together in one native note update.
 
 [Note](#type-note).
 
-**Errors:** `collectionUnavailable`, `editorConflict`, `internalError`, `invalidParams`, `notFound`, `staleSession`, `validationFailed`.
+**Errors:** `busy`, `collectionUnavailable`, `editorConflict`, `internalError`, `invalidParams`, `ioError`, `notFound`, `staleSession`, `validationFailed`.
 
 **Example request**
 
@@ -1322,7 +1332,7 @@ Add tags on selected notes.
 | --- | --- | --- | --- |
 | `items` | array of [TagAddItem](#type-tagadditem) | Yes | — |
 
-**Errors:** `collectionUnavailable`, `editorConflict`, `internalError`, `invalidParams`, `notFound`, `staleSession`.
+**Errors:** `busy`, `collectionUnavailable`, `editorConflict`, `internalError`, `invalidParams`, `ioError`, `notFound`, `staleSession`.
 
 **Example request**
 
@@ -1362,7 +1372,7 @@ Remove tags on selected notes.
 | --- | --- | --- | --- |
 | `items` | array of [TagRemoveItem](#type-tagremoveitem) | Yes | — |
 
-**Errors:** `collectionUnavailable`, `editorConflict`, `internalError`, `invalidParams`, `notFound`, `staleSession`.
+**Errors:** `busy`, `collectionUnavailable`, `editorConflict`, `internalError`, `invalidParams`, `ioError`, `notFound`, `staleSession`.
 
 **Example request**
 
@@ -1438,7 +1448,7 @@ Additional `oneOf` constraint:
 
 [Count](#type-count).
 
-**Errors:** `collectionUnavailable`, `editorConflict`, `internalError`, `invalidParams`, `staleSession`.
+**Errors:** `busy`, `collectionUnavailable`, `editorConflict`, `internalError`, `invalidParams`, `ioError`, `staleSession`.
 
 **Example request**
 

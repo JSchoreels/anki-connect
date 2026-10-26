@@ -86,11 +86,23 @@ and custom editor history are invalidated. Collection calls pin their admission
 session and recheck it before execution; lifecycle transitions reject competing work.
 Queued GUI calls recheck active collection work when they start.
 
-Affected open editors conservatively block writes, including clean/saved editors
-and potentially pending webview changes. Close affected editors to proceed. Add
-drafts have explicit update methods and reject content replacement/type changes
-when a draft already contains unsaved content. This release does not claim fully
-synchronized dirty-state detection for every editor variant.
+Note-field and note-scoped tag updates synchronize one affected open editor.
+The adapter pauses input, waits for webview readiness and pending field/tag saves,
+then admits the serialized collection write. It reloads the editor before restoring
+input and completing the reply. Supplied API properties take precedence; pending
+edits in other fields and omitted tags are preserved. Classic/custom editors and
+the Svelte browser editor use the same callback-based lifecycle without nested
+event loops. Concurrent updates to that editor return `busy`; a failed save or a
+changed editor/session does not admit the write.
+If the native write finishes but the webview cannot refresh, `ioError` includes
+`writeCompleted` and the editing widget stays disabled until the window is reopened,
+so a later typing save cannot overwrite the API update with stale content.
+
+Other writes, all-note tag replacements, unsupported editor integrations and
+multiple affected editor windows retain the conservative `editorConflict` guard.
+Saving one window can reload another, so those windows must be closed before the
+write. Add drafts retain explicit update methods and reject content replacement
+or type changes when a draft already contains unsaved content.
 
 ## Native writes and media
 
