@@ -42,11 +42,20 @@ NATIVE_REQUIREMENTS = {
 }
 
 
+# How long a finished request keeps its background operation while the Browser
+# is open, and how long a burst of requests may keep it in total.
+LINGER_MS = 50
+LINGER_LIMIT = 0.5
+
+
 class Runtime:
-    def __init__(self, owner, schedule=None):
+    def __init__(self, owner, schedule=None, later=None):
         from aqt.qt import QTimer
         self.owner = owner
         self.schedule = schedule or (lambda callback: QTimer.singleShot(0, callback))
+        self.later = later or QTimer.singleShot
+        self._linger = None
+        self._held_since = None
         self.operations = Operations(self.schedule)
         self.dispatcher = Dispatcher(self)
         self.gui = Gui(self)
@@ -81,6 +90,7 @@ class Runtime:
         return self._session
 
     def invalidate_session(self, *args):
+        self.end_linger()
         self._collection = None
         self._session = None
         self.tokens.clear()
@@ -217,12 +227,50 @@ class Runtime:
         finally:
             self.finish_changes(service)
 
+    @staticmethod
+    def browser_open():
+        import aqt
+        entry = aqt.dialogs._dialogs.get('Browser')
+        return bool(entry and entry[1] is not None)
+
+    def background_ops(self):
+        """Anki's active background operations, not counting a lingering hold."""
+        return self.mw._background_op_count - (self._linger is not None)
+
+    def hold_background(self):
+        """Mark a collection task as a background operation, as Anki's own operations do.
+
+        The open Browser stops fetching rows while one runs and redraws every
+        cell when the last one ends, which on Windows waits for the next
+        frame (~12 ms). A request that follows within LINGER_MS inherits the
+        previous request's operation, so a burst redraws once at its end."""
+        if self._linger is not None:
+            self._linger = None
+        else:
+            if not self.mw._background_op_count:
+                self._held_since = time.monotonic()
+            self.mw._increase_background_ops()
+
+    def release_background(self):
+        if (self._linger is None and self.mw._background_op_count == 1 and self.browser_open()
+                and self._held_since is not None and time.monotonic() - self._held_since < LINGER_LIMIT):
+            token = self._linger = object()
+            self.later(LINGER_MS, lambda: self.end_linger(token))
+        else:
+            self.mw._decrease_background_ops()
+
+    def end_linger(self, token=None):
+        if self._linger is not None and (token is None or token is self._linger):
+            self._linger = None
+            self._held_since = None
+            self.mw._decrease_background_ops()
+
     def background(self, work, expected=None, after=None, initiator=None):
         col, session = self.capture(expected)
         service = Services(self, col, session)
         result = Deferred()
         # A GUI/background operation could otherwise unload the captured collection.
-        self.mw._increase_background_ops()
+        self.hold_background()
         reviewer = self.mw.reviewer
         self.active_reviewer_card = reviewer.card.id if reviewer and reviewer.card and self.mw.state == 'review' else None
         def task():
@@ -232,7 +280,7 @@ class Runtime:
             MediaTransaction.recover(service)
             return work(service)
         def finished(future):
-            self.mw._decrease_background_ops()
+            self.release_background()
             try:
                 value = future.result()
                 if after:
@@ -270,7 +318,7 @@ class Runtime:
             _, session = self.capture(params.get('session'))
         else:
             session = self.session
-        if method in GUI_METHODS and meta['scope'] == 'collection' and self.mw._background_op_count:
+        if method in GUI_METHODS and meta['scope'] == 'collection' and self.background_ops():
             raise ApiError('busy', 'A collection operation is active.')
         def start(key=None, prepared_editor=None):
             self.require_capability(method)
@@ -280,9 +328,10 @@ class Runtime:
                 self.gui.guard(method, params, prepared_editor)
             if meta['scope'] == 'collection':
                 self.capture(session)
-                if method in GUI_METHODS and self.mw._background_op_count:
+                if method in GUI_METHODS and self.background_ops():
                     raise ApiError('busy', 'A collection operation is active.')
             if method in GUI_METHODS:
+                self.end_linger()
                 value = self.gui.execute(method, params, operation_id=key)
                 return value if isinstance(value, Deferred) else completed(value)
             if method == 'media.store':

@@ -56,6 +56,14 @@ reads/downloads use background tasks without collection access. Completion callb
 publish native changes through `on_op_finished` before resolving API replies.
 Failed operations also publish changes from successful prefixes.
 
+The open Browser stops fetching rows while a background operation runs and
+redraws every cell when the last one ends, which on Windows waits for the next
+frame (about 12 ms per request). While a Browser is open, a finished request
+therefore keeps its operation for 50 ms, and a request admitted in that window
+inherits it, so a burst redraws once at its end. Busy checks do not count the
+lingering hold; GUI actions, lifecycle checks and session changes end it at once,
+and a burst older than 0.5 s releases it so the Browser still refreshes.
+
 ```mermaid
 flowchart LR
     Client -->|HTTP| Transport[web.py]

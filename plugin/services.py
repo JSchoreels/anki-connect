@@ -309,7 +309,7 @@ class Services:
             candidates = self.col.db.list('select id from notes where csum=? and id!=?', field_checksum(note.fields[0]), note.id)
             scope_decks = None
             if policy.get('scope', 'collection') == 'deck':
-                target = self.resolve(policy.get('deck', self.summary(deck)), 'deck')
+                target = self.resolved(policy.get('deck', self.summary(deck)), 'deck')
                 scope_decks = {target['id']}
                 if policy.get('includeChildren', False):
                     scope_decks.update(id for _, id in self.col.decks.children(target['id']))

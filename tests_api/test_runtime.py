@@ -631,3 +631,52 @@ def test_note_type_delete_unused_reports_items_and_removes_type(native):
     deleted = call(service, 'noteTypes.deleteUnused', noteTypes=[{'name': 'Disposable'}])
     assert deleted == {'items': [{'index': 0, 'result': {'changed': True}}]}
     assert service.col.models.get(int(model['id'])) is None
+
+
+def test_requests_while_the_browser_is_open_share_one_background_operation(admitted, monkeypatch):
+    import aqt
+    from plugin import runtime as runtime_module
+    owner, service, drain, work, notifications = admitted
+    runtime, mw = owner.runtime, aqt.mw
+    edges, timers = [], []
+    increase, decrease = mw._increase_background_ops, mw._decrease_background_ops
+    def blocking():
+        edges.extend([] if mw._background_op_count else ['block'])
+        increase()
+    def unblocking():
+        decrease()
+        edges.extend([] if mw._background_op_count else ['unblock'])
+    mw._increase_background_ops, mw._decrease_background_ops = blocking, unblocking
+    runtime.later = lambda delay, callback: timers.append((delay, callback))
+    def request(action='deckNames'):
+        pending = owner.handler_async({'action': action, 'version': 6})
+        drain()
+        assert pending.done and pending.value['error'] is None
+    # Without a Browser the operation ends with its request, as before.
+    request()
+    assert edges == ['block', 'unblock'] and not timers
+    edges.clear()
+    monkeypatch.setitem(aqt.dialogs._dialogs, 'Browser', [object, object()])
+    for _ in range(3):
+        request()
+        # The lingering hold is not an active operation for busy checks.
+        assert mw._background_op_count == 1 and runtime.background_ops() == 0
+    assert edges == ['block'] and len(timers) == 3
+    assert all(delay == runtime_module.LINGER_MS for delay, _ in timers)
+    for _, callback in timers[:-1]:
+        callback()  # superseded by the next request
+    assert mw._background_op_count == 1
+    timers[-1][1]()
+    assert mw._background_op_count == 0 and edges == ['block', 'unblock']
+    # GUI actions, session changes and long bursts end the hold at once.
+    for end in (lambda: owner.guard_legacy('guiDeckBrowser', {}), runtime.invalidate_session):
+        request()
+        assert mw._background_op_count == 1
+        end()
+        assert mw._background_op_count == 0
+        runtime.session
+    request()
+    runtime._held_since -= runtime_module.LINGER_LIMIT
+    timers.clear()
+    request()
+    assert mw._background_op_count == 0 and not timers

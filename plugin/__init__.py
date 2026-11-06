@@ -191,9 +191,11 @@ class AnkiConnect:
 
     def guard_legacy(self, name, params, prepared_editor=None):
         gui_action = name.startswith('gui') and name != 'guiExitAnki'
-        if (gui_action or name == 'reloadCollection') and getattr(self.window(), '_background_op_count', 0):
+        if (gui_action or name == 'reloadCollection') and getattr(self.window(), '_background_op_count', 0) - (self.runtime._linger is not None):
             from .protocol import ApiError
             raise ApiError('busy', 'A collection operation is active.')
+        if gui_action or name == 'reloadCollection':
+            self.runtime.end_linger()
         if self.runtime.lifecycle_active and name not in ('version', 'requestPermission', 'apiReflect', 'getProfiles', 'getActiveProfile'):
             from .protocol import ApiError
             raise ApiError('busy', 'Collection lifecycle operation is active.')

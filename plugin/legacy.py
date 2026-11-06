@@ -211,8 +211,10 @@ class Legacy:
                 raise ApiError(error.kind, 'Model name already exists', error.details) from error
             raise
 
-    def resolve(self, reference, kind):
+    def resolve(self, reference, kind, read_only=False):
         try:
+            if read_only:
+                return self.service.resolved(reference, kind)
             return self.service.resolve(reference, kind)
         except ApiError as error:
             if error.kind == 'notFound':
@@ -300,8 +302,10 @@ class Legacy:
 
     def created_note(self, source, pure=False):
         source = self.normalize_note(source)
-        model = self.model(source['modelName'])
-        self.resolve(self.ref(source['deckName']), 'deck')
+        if self.service is None:
+            self.service = self.runtime.service()
+        model = self.resolve(self.ref(source['modelName']), 'noteType', read_only=True)
+        self.resolve(self.ref(source['deckName']), 'deck', read_only=True)
         # Native notes have every model field, including omitted media targets.
         fields = {field['name']: '' for field in model['flds']}
         fields.update(self.fields(source.get('fields'), fields))
@@ -936,7 +940,11 @@ class Legacy:
             return self.s('media.getDirectory')['path']
         if name in ('canAddNote', 'canAddNoteWithErrorDetail', 'canAddNotes', 'canAddNotesWithErrorDetail'):
             sources = p.get('notes', [p.get('note')])
-            result = [self.validate(source) for source in sources]
+            if self.service is None:
+                self.service = self.runtime.service()
+            # Read-only: each note type, deck and identical note is checked once.
+            with self.service.validation_scope():
+                result = [self.validate(source) for source in sources]
             if not name.endswith('WithErrorDetail'):
                 result = [item['canAdd'] for item in result]
             return result if name.startswith('canAddNotes') else result[0]
