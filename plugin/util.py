@@ -30,7 +30,8 @@ def api(*versions):
 DEFAULT_CONFIG = {
     'apiKey': None,
     'apiLogPath': None,
-    'apiPollInterval': 25,
+    # Housekeeping interval (ms) for idle timeouts; socket I/O is event-driven.
+    'apiPollInterval': 1000,
     'apiVersion': 6,
     'webBacklog': 5,
     'webBindAddress': os.getenv('ANKICONNECT_BIND_ADDRESS', '127.0.0.1'),

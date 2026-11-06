@@ -36,7 +36,7 @@ if anki_version < required_anki_version:
 import inspect
 import json
 from aqt._macos_helper import macos_helper
-from aqt.qt import Qt, QTimer, QMessageBox, QCheckBox
+from aqt.qt import Qt, QTimer, QMessageBox, QCheckBox, QSocketNotifier
 from . import util, web
 from .edit import Edit
 from .legacy import Legacy, Accepted, legacy_request
@@ -68,7 +68,10 @@ class AnkiConnect:
 
     def startWebServer(self):
         try:
-            self.server.listen()
+            # Socket notifiers wake the transport as soon as a connection is ready;
+            # the timer only handles idle timeouts and is a fallback I/O pump.
+            self.server.listen(QSocketNotifier)
+            self.server.onIdle = lambda: QTimer.singleShot(0, self.checkExit)
             self.timer = QTimer()
             self.timer.timeout.connect(self.advance)
             self.timer.start(util.setting('apiPollInterval'))
@@ -85,6 +88,10 @@ class AnkiConnect:
 
     def advance(self):
         self.server.advance()
+        self.checkExit()
+
+    def checkExit(self):
+        # Exit begins only after outstanding socket replies drain.
         if self.runtime.exit_requested and not self.server.clients:
             self.runtime.exit_requested = False
             self.window().close()
@@ -119,32 +126,55 @@ class AnkiConnect:
     def getModel(self, modelName):
         return self.runtime.service().resolve({'name': modelName}, 'noteType')
 
+    def legacy_index(self):
+        """Legacy action names, version aliases and signatures. They are fixed per
+        class, so introspect once instead of on every request."""
+        cls = type(self)
+        index = cls.__dict__.get('_legacy_index')
+        if index is None:
+            members = [(name, method) for name, method in inspect.getmembers(self, inspect.ismethod)
+                       if getattr(method, 'api', False)]
+            index = {'names': [name for name, _ in members],
+                     'versions': {name: list(getattr(method, 'versions', [])) for name, method in members},
+                     'signatures': {name: inspect.signature(method) for name, method in members},
+                     'aliases': {}}
+            cls._legacy_index = index
+        return index
+
     def legacy_actions(self):
-        return [name for name, method in inspect.getmembers(self, inspect.ismethod) if getattr(method, 'api', False)]
+        return list(self.legacy_index()['names'])
 
     def resolve_action(self, name, version, params):
-        for methodName in self.legacy_actions():
-            method = getattr(self, methodName)
-            aliases = [(v, alias) for v, alias in getattr(method, 'versions', []) if v <= version]
-            alias = max(aliases)[1] if aliases else methodName
-            if alias == name:
-                signature = inspect.signature(method)
-                # Clients often reuse parameter objects across actions. Ignore
-                # surplus keys, while preserving the binder's missing-argument errors.
-                params = {key: value for key, value in params.items() if key in signature.parameters}
-                for key, parameter in signature.parameters.items():
-                    if params.get(key) is None and parameter.default is not inspect.Parameter.empty:
-                        params.pop(key, None)
-                try:
-                    bound = signature.bind(**params)
-                except TypeError:
-                    # The real call binder retains the historical public error.
-                    # Binding failed, so the method body cannot execute.
-                    method(**params)
-                    raise
-                bound.apply_defaults()
-                return methodName, Legacy.normalize_params(methodName, dict(bound.arguments))
-        raise Exception('unsupported action')
+        index = self.legacy_index()
+        table = index['aliases'].get(version)
+        if table is None:
+            table = {}
+            for methodName in index['names']:
+                aliases = [(v, alias) for v, alias in index['versions'][methodName] if v <= version]
+                alias = max(aliases)[1] if aliases else methodName
+                table.setdefault(alias, methodName)  # First match in name order, as before.
+            if len(index['aliases']) < 64:  # Clients choose the version; bound the cache.
+                index['aliases'][version] = table
+        methodName = table.get(name)
+        if methodName is None:
+            raise Exception('unsupported action')
+        method = getattr(self, methodName)
+        signature = index['signatures'][methodName]
+        # Clients often reuse parameter objects across actions. Ignore
+        # surplus keys, while preserving the binder's missing-argument errors.
+        params = {key: value for key, value in params.items() if key in signature.parameters}
+        for key, parameter in signature.parameters.items():
+            if params.get(key) is None and parameter.default is not inspect.Parameter.empty:
+                params.pop(key, None)
+        try:
+            bound = signature.bind(**params)
+        except TypeError:
+            # The real call binder retains the historical public error.
+            # Binding failed, so the method body cannot execute.
+            method(**params)
+            raise
+        bound.apply_defaults()
+        return methodName, Legacy.normalize_params(methodName, dict(bound.arguments))
 
     @staticmethod
     def legacy_guard_params(name, params):
@@ -161,9 +191,11 @@ class AnkiConnect:
 
     def guard_legacy(self, name, params, prepared_editor=None):
         gui_action = name.startswith('gui') and name != 'guiExitAnki'
-        if (gui_action or name == 'reloadCollection') and getattr(self.window(), '_background_op_count', 0):
+        if (gui_action or name == 'reloadCollection') and getattr(self.window(), '_background_op_count', 0) - (self.runtime._linger is not None):
             from .protocol import ApiError
             raise ApiError('busy', 'A collection operation is active.')
+        if gui_action or name == 'reloadCollection':
+            self.runtime.end_linger()
         if self.runtime.lifecycle_active and name not in ('version', 'requestPermission', 'apiReflect', 'getProfiles', 'getActiveProfile'):
             from .protocol import ApiError
             raise ApiError('busy', 'Collection lifecycle operation is active.')

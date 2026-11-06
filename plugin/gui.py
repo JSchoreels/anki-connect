@@ -427,7 +427,7 @@ class Gui:
         def poll():
             if result.done:
                 return
-            state('running' if self.mw._background_op_count else 'waitingForUser')
+            state('running' if self.runtime.background_ops() else 'waitingForUser')
             if self.runtime.session != session:
                 finish(error=ApiError('staleSession', 'Collection changed during import.'))
                 return
@@ -531,8 +531,9 @@ class Gui:
 
     def guard_lifecycle(self):
         import aqt
-        if self.mw._background_op_count:
+        if self.runtime.background_ops():
             raise ApiError('busy', 'Anki has an active collection operation.')
+        self.runtime.end_linger()
         for _, dialog in aqt.dialogs._dialogs.values():
             if dialog is not None and hasattr(dialog, 'editor'):
                 raise ApiError('editorConflict', 'Close editors before changing collection lifecycle.')

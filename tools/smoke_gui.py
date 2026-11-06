@@ -33,6 +33,26 @@ if scenario == 'all':
     sys.exit(bool(failures))
 if scenario not in scenarios:
     raise SystemExit('Choose all or: ' + ', '.join(scenarios))
+def hard_exit(code):
+    """Exit without native teardown; the exit scenario verifies real shutdown.
+
+    On Windows os._exit() still runs DLL detach routines, where Qt WebEngine can
+    fail fast (0xC0000602) or deadlock after every check has passed.
+    TerminateProcess skips them and preserves the scenario's exit code."""
+    for stream in (sys.stdout, sys.stderr, sys.__stdout__, sys.__stderr__):
+        # Anki replaces sys.stderr with an error handler that has no flush().
+        flush = getattr(stream, 'flush', None)
+        if flush is not None:
+            flush()
+    if os.name == 'nt':
+        import ctypes
+        kernel32 = ctypes.windll.kernel32
+        kernel32.GetCurrentProcess.restype = ctypes.c_void_p
+        kernel32.TerminateProcess.argtypes = (ctypes.c_void_p, ctypes.c_uint)
+        kernel32.TerminateProcess(kernel32.GetCurrentProcess(), code)
+    os._exit(code)
+
+
 # Anki's IPC key is normally per user, not per profile. Set it before importing
 # aqt so tests never reuse a personal Anki instance or another test process.
 os.environ['ANKI_SINGLE_INSTANCE_KEY'] = 'anki-api-test-' + uuid.uuid4().hex
@@ -845,5 +865,5 @@ try:
 except BaseException:
     import traceback
     print(traceback.format_exc(), flush=True)
-    os._exit(1)
-os._exit(0)
+    hard_exit(1)
+hard_exit(0)

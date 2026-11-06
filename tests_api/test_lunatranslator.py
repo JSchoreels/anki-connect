@@ -80,7 +80,8 @@ def socket_invoke(owner, drain, action, **params):
     try:
         peer.sendall(b'GET / HTTP/1.1\r\nHost: 127.0.0.1:8765\r\nContent-Type: application/json\r\n'
                      + b'Content-Length: ' + str(len(payload)).encode() + b'\r\n\r\n' + payload)
-        assert client.advance()
+        # Synchronous replies (such as authentication errors) are written at once.
+        client.advance()
         drain()
         for _ in range(10):
             if not client.advance():

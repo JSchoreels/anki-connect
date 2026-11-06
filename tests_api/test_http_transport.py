@@ -1,6 +1,7 @@
 """Socket-level compatibility with unpatched AnkiConnect HTTP proxies."""
 import json
 import socket
+from types import SimpleNamespace
 
 import pytest
 
@@ -111,3 +112,38 @@ def test_transport_errors_can_be_forwarded_by_unpatched_proxies(raw, reply, stat
     assert actual == status and body == b''
     assert headers[b'Content-Type'] == b'application/json'
     assert headers[b'Connection'] == b'close'
+
+
+@pytest.mark.parametrize('body', [{}, {'action': ''}, {'action': 1, 'version': 'six'},
+                                  {'action': 'version', 'params': []}, [], 'text', {'version': 6}])
+def test_cached_legacy_validator_keeps_jsonschema_error_text(body):
+    import jsonschema
+    from plugin import web
+    try:
+        jsonschema.validate(body, web.request_schema)
+    except jsonschema.ValidationError as error:
+        expected = str(error)
+    else:
+        expected = None
+    error = jsonschema.exceptions.best_match(web.request_validator.iter_errors(body))
+    assert (None if error is None else str(error)) == expected
+
+
+def test_params_copy_only_top_level_and_fresh_defaults():
+    from plugin.protocol import Dispatcher
+    dispatcher = Dispatcher(None)
+    nested = {'id': '1', 'patch': {'tags': ['a']}}
+    prepared = dispatcher.params('notes.update', nested)
+    assert prepared == nested and prepared is not nested
+    prepared['session'] = 'pinned'
+    assert 'session' not in nested
+    source = {}
+    first = dispatcher.params('reviews.list', source)
+    assert source == {} and first['limit'] == 100 and first['membership'] == 'current'
+    # Mutable schema defaults must never be shared between requests.
+    dispatcher.defaults['reviews.list'] = dispatcher.defaults['reviews.list'] + [('extra', {'items': []})]
+    dispatcher.validators['reviews.list'] = SimpleNamespace(iter_errors=lambda params: [])
+    one, two = dispatcher.params('reviews.list', {}), dispatcher.params('reviews.list', {})
+    one['extra']['items'].append(1)
+    assert two['extra'] == {'items': []}
+    assert dispatcher.defaults['reviews.list'][-1] == ('extra', {'items': []})

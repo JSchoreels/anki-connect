@@ -1,5 +1,6 @@
 """Native Anki domain services. No legacy action implementations live here."""
 import base64
+import contextlib
 import copy
 import hashlib
 import json
@@ -107,8 +108,21 @@ class Services:
         self.runtime, self.col, self.session = runtime, collection, session
         self.changes = []
         self.undo_target = False
+        # Validation results for unchanged inputs, enabled only by callers that
+        # validate the same notes repeatedly before writing (None = disabled).
+        self.validations = None
+
+    @contextlib.contextmanager
+    def validation_scope(self):
+        previous, self.validations = self.validations, {}
+        try:
+            yield
+        finally:
+            self.validations = previous
 
     def change(self, result):
+        if self.validations:
+            self.validations.clear()  # Writes can change duplicate results.
         if result is not None:
             self.changes.append(result.changes if hasattr(result, 'changes') else result)
             if self.undo_target is not False:
@@ -178,6 +192,17 @@ class Services:
             raise ApiError('notFound', kind.title() + ' not found: ' + str(reference))
         return copy.deepcopy(value)
 
+    def resolved(self, reference, kind):
+        """resolve() for read-only use; inside a validation scope each distinct
+        reference is looked up and copied once."""
+        if self.validations is None:
+            return self.resolve(reference, kind)
+        key = ('resolve', kind, json.dumps(reference, sort_keys=True))
+        value = self.validations.get(key)
+        if value is None:
+            value = self.validations[key] = self.resolve(reference, kind)
+        return value
+
     def summary(self, value):
         return {'id': str(value['id']), 'name': value['name']}
 
@@ -203,6 +228,10 @@ class Services:
         params = {'query': query, 'limit': limit, 'sort': sort}
         if cursor:
             return self.page(None, kind + '.search', {**params, 'cursor': cursor})
+        return self.page(self.search_ids(kind, query, sort), kind + '.search', params)
+
+    def search_ids(self, kind, query, sort=None):
+        """Every matching ID in search order (ascending without a sort)."""
         order = False
         if sort:
             from anki.collection import BrowserColumns
@@ -220,7 +249,7 @@ class Services:
             raise ApiError('invalidSearch', str(error)) from error
         if sort is None:
             ids.sort()
-        return self.page(ids, kind + '.search', params)
+        return ids
 
     def notes_search(self, **params):
         return self.search('notes', **params)
@@ -229,8 +258,8 @@ class Services:
         return self.search('cards', **params)
 
     def prepare_note(self, data):
-        model = self.resolve(data['noteType'], 'noteType')
-        deck = self.resolve(data['deck'], 'deck')
+        model = self.resolved(data['noteType'], 'noteType')
+        deck = self.resolved(data['deck'], 'deck')
         if deck.get('dyn'):
             raise ApiError('validationFailed', 'Cannot add a note to a filtered deck.')
         note = self.col.new_note(model)
@@ -254,6 +283,17 @@ class Services:
             fill_empty=False, partial_render=True).is_empty for template in templates)
 
     def validation(self, note, deck, policy, reject_empty):
+        if self.validations is None:
+            return self.validate_note(note, deck, policy, reject_empty)
+        # Everything validation reads: content, note type, target deck, options.
+        key = (note.id, note.mid, tuple(note.fields), deck['id'], bool(deck.get('dyn')),
+               json.dumps(policy, sort_keys=True), bool(reject_empty))
+        cached = self.validations.get(key)
+        if cached is None:
+            cached = self.validations[key] = self.validate_note(note, deck, policy, reject_empty)
+        return copy.deepcopy(cached)  # Callers append batch issues to the result.
+
+    def validate_note(self, note, deck, policy, reject_empty):
         result = int(note.fields_check())
         reasons = {1: 'emptyFirstField', 3: 'missingCloze', 4: 'notClozeNoteType', 5: 'notClozeField'}
         issues = []
@@ -269,7 +309,7 @@ class Services:
             candidates = self.col.db.list('select id from notes where csum=? and id!=?', field_checksum(note.fields[0]), note.id)
             scope_decks = None
             if policy.get('scope', 'collection') == 'deck':
-                target = self.resolve(policy.get('deck', self.summary(deck)), 'deck')
+                target = self.resolved(policy.get('deck', self.summary(deck)), 'deck')
                 scope_decks = {target['id']}
                 if policy.get('includeChildren', False):
                     scope_decks.update(id for _, id in self.col.decks.children(target['id']))
@@ -317,16 +357,17 @@ class Services:
     def prepare_notes(self, notes):
         """Validate an ordered batch without writing it, including duplicates."""
         from anki.collection import AddNoteRequest
-        prepared, errors, seen = [], [], []
+        # Earlier batch notes by normalized first field, so the in-batch
+        # duplicate check is linear rather than quadratic in the batch size.
+        prepared, errors, seen = [], [], {}
         for index, data in enumerate(notes):
             try:
                 note, deck = self.prepare_note(data)
                 validation = self.validation(note, deck, data.get('duplicates'), data.get('rejectEmptyQuestions', True))
                 policy = data.get('duplicates', {})
+                key = normalized_field(note.fields[0])
                 if not policy.get('allow', False):
-                    for old_note, old_deck in seen:
-                        if normalized_field(note.fields[0]) != normalized_field(old_note.fields[0]):
-                            continue
+                    for old_note, old_deck in seen.get(key, ()):
                         if not policy.get('acrossNoteTypes', False) and old_note.mid != note.mid:
                             continue
                         if policy.get('scope') == 'deck':
@@ -341,7 +382,7 @@ class Services:
                 if not validation['valid']:
                     raise ApiError('validationFailed', 'Invalid note.', validation)
                 prepared.append(AddNoteRequest(note=note, deck_id=deck['id']))
-                seen.append((note, deck))
+                seen.setdefault(key, []).append((note, deck))
             except Exception as error:
                 errors.append({'index': index, 'error': error_record(error)})
         return prepared, errors
@@ -540,6 +581,11 @@ class Services:
                  for item in queued.cards]
         return {'cards': cards, 'newCount': queued.new_count,
                 'learningCount': queued.learning_count, 'reviewCount': queued.review_count}
+
+    def next_state_labels(self, card):
+        """Answer-button interval labels without minting a prediction token."""
+        states = self.col._backend.get_scheduling_states(card.id)
+        return list(self.col._backend.describe_next_states(states))
 
     def scheduling_predict(self, cardId):
         card = self.card(cardId)
@@ -913,7 +959,21 @@ class Services:
     def media_list(self, pattern='*'):
         import fnmatch
         self.media_filename(pattern)
-        return sorted(name for name in os.listdir(self.col.media.dir()) if fnmatch.fnmatchcase(name, pattern))
+        folder = self.col.media.dir()
+        if not any(char in pattern for char in '*?['):
+            # A literal pattern matches only its exact name: answer it without
+            # listing a folder that can hold tens of thousands of files.
+            path = os.path.join(folder, pattern)
+            if not os.path.lexists(path):
+                return []
+            if os.name == 'nt' and not os.path.islink(path):
+                try:
+                    # Windows matches names case-insensitively; this is the stored case.
+                    if os.path.basename(os.path.realpath(path, strict=True)) == pattern:
+                        return [pattern]
+                except OSError:
+                    pass
+        return sorted(name for name in os.listdir(folder) if fnmatch.fnmatchcase(name, pattern))
 
     def media_get(self, filename):
         filename = self.media_filename(filename)

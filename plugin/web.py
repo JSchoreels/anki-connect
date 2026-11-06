@@ -1,6 +1,5 @@
 """Nonblocking HTTP transport for the legacy and JSON-RPC endpoints."""
 import json
-import select
 import socket
 import time
 import jsonschema
@@ -24,13 +23,91 @@ class WebRequest:
         self.method, self.headers, self.body, self.path = method, headers, body, path
 
 
+MAX_HEADER_BYTES = 65536
+
+
+def parse_head(head):
+    """Parse request line and headers; return (method, path, headers, body size)."""
+    if len(head) > MAX_HEADER_BYTES:
+        raise ValueError('Headers too large')
+    lines = bytes(head).split(b'\r\n')
+    method, path, version = lines[0].split(b' ')
+    if version not in (b'HTTP/1.0', b'HTTP/1.1'):
+        raise ValueError('Unsupported HTTP version')
+    headers = {}
+    for line in lines[1:]:
+        key, value = line.split(b':', 1)
+        key = key.strip().lower()
+        value = value.strip()
+        if key in headers:
+            # Connection is a list field; older proxies may emit both
+            # close and keep-alive. Every reply still closes this socket.
+            if key != b'connection':
+                raise ValueError('Duplicate header')
+            headers[key] += b', ' + value
+        else:
+            headers[key] = value
+    if b'transfer-encoding' in headers:
+        raise ValueError('Chunked requests unsupported')
+    size = int(headers.get(b'content-length', b'0'))
+    if size > SCHEMA['x-limits']['maxRequestBytes']:
+        raise HttpError('413 Payload Too Large')
+    if size < 0:
+        raise ValueError('Invalid body length')
+    return method.upper(), path, headers, size
+
+
+class RequestParser:
+    """Incremental parser: headers are located and parsed once, then the body
+    accumulates in one buffer until Content-Length bytes have arrived."""
+
+    def __init__(self):
+        self.data = bytearray()
+        self.scanned = 0
+        self.head = None
+        self.offset = self.end = 0
+
+    def feed(self, chunk):
+        self.data += chunk
+        if self.head is None:
+            # Resume the terminator search where the previous chunk ended.
+            index = self.data.find(b'\r\n\r\n', max(0, self.scanned - 3))
+            if index < 0:
+                if len(self.data) > MAX_HEADER_BYTES:
+                    raise ValueError('Headers too large')
+                self.scanned = len(self.data)
+                return None
+            self.head = parse_head(self.data[:index])
+            self.offset = index + 4
+        method, path, headers, size = self.head
+        if len(self.data) < self.offset + size:
+            return None
+        self.end = self.offset + size
+        with memoryview(self.data) as view:
+            body = bytes(view[self.offset:self.end])
+        return WebRequest(method, headers, body, path)
+
+
 class WebClient:
-    def __init__(self, sock, handler):
-        self.sock, self.handler = sock, handler
-        self.readBuff = b''
+    """One connection: read one request, dispatch it, write the reply, close.
+
+    With a notifier factory, Qt socket notifiers drive reads and writes as soon
+    as the socket is ready, and replies are written when their completion
+    resolves. advance() performs the same I/O manually and enforces the idle
+    timeout; the add-on calls it from a low-frequency housekeeping timer."""
+
+    def __init__(self, sock, handler, notifier=None, on_close=None):
+        self.sock, self.handler, self.onClose = sock, handler, on_close
+        self.parser = RequestParser()
         self.writeBuff = b''
+        self.writeOffset = 0
         self.pending = False
         self.started = time.monotonic()
+        self.reader = self.writer = None
+        if notifier is not None and sock is not None:
+            self.reader = notifier(sock.fileno(), 'read', self.read)
+            self.writer = notifier(sock.fileno(), 'write', self.flush)
+            self.writer.setEnabled(False)
 
     def advance(self, recvSize=65536):
         if self.sock is None:
@@ -38,123 +115,157 @@ class WebClient:
         if not self.pending and time.monotonic() - self.started > 10:
             self.close()
             return False
-        # Windows select() rejects empty socket lists while accepted work waits.
         if self.pending and not self.writeBuff:
-            return True
-        rlist, wlist = select.select([self.sock] if not self.pending and not self.writeBuff else [], [self.sock] if self.writeBuff else [], [], 0)[:2]
-        if rlist:
-            try:
+            return True  # Accepted work has no implicit deadline.
+        if self.writeBuff:
+            self.flush()
+        else:
+            self.read(recvSize=recvSize)
+        return self.sock is not None
+
+    def read(self, *_, recvSize=65536):
+        try:
+            # Drain everything available; header and body limits bound the loop.
+            while self.sock is not None and not self.pending and not self.writeBuff:
                 msg = self.sock.recv(recvSize)
                 if not msg:
                     self.close()
-                    return False
+                    return
                 self.started = time.monotonic()
-                self.readBuff += msg
-                req, length = self.parseRequest(self.readBuff)
+                req = self.parser.feed(msg)
                 if req is not None:
-                    self.readBuff = b''
-                    self.pending = True
-                    reply = self.handler(req)
-                    def finish(source):
-                        self.pending = False
-                        self.started = time.monotonic()
-                        if self.sock is not None:
-                            self.writeBuff = source.value if not source.error else _http_error_response('500 Internal Server Error')
-                    (reply if isinstance(reply, Deferred) else completed(reply)).then(finish)
-            except BlockingIOError:
-                pass
-            except HttpError as error:
-                self.writeBuff = _http_error_response(error.status)
-            except (ValueError, UnicodeError):
-                self.writeBuff = _http_error_response('400 Bad Request')
-            except OSError:
-                self.close()
-                return False
-        if wlist and self.writeBuff:
-            try:
-                length = self.sock.send(self.writeBuff)
-                if length:
+                    self.dispatch(req)
+        except BlockingIOError:
+            pass
+        except HttpError as error:
+            self.respond(_http_error_response(error.status))
+        except (ValueError, UnicodeError):
+            self.respond(_http_error_response('400 Bad Request'))
+        except OSError:
+            self.close()
+
+    def dispatch(self, req):
+        self.parser = RequestParser()
+        self.pending = True
+        self.setNotifier(self.reader, False)
+        reply = self.handler(req)
+        def finish(source):
+            self.pending = False
+            self.started = time.monotonic()
+            if self.sock is not None:
+                self.respond(source.value if not source.error else _http_error_response('500 Internal Server Error'))
+        (reply if isinstance(reply, Deferred) else completed(reply)).then(finish)
+
+    def respond(self, data):
+        self.setNotifier(self.reader, False)
+        self.writeBuff, self.writeOffset = data, 0
+        self.flush()
+
+    def flush(self, *_):
+        if self.sock is None or not self.writeBuff:
+            return
+        try:
+            with memoryview(self.writeBuff) as view:
+                while self.writeOffset < len(view):
+                    length = self.sock.send(view[self.writeOffset:])
+                    if not length:
+                        break
                     self.started = time.monotonic()
-                self.writeBuff = self.writeBuff[length:]
-                if not self.writeBuff:
-                    self.close()
-                    return False
-            except BlockingIOError:
-                pass
-            except OSError:
-                self.close()
-                return False
-        return True
+                    self.writeOffset += length
+        except BlockingIOError:
+            pass
+        except OSError:
+            self.close()
+            return
+        if self.writeOffset >= len(self.writeBuff):
+            self.close()
+        else:
+            self.setNotifier(self.writer, True)
+
+    @staticmethod
+    def setNotifier(notifier, enabled):
+        if notifier is not None:
+            notifier.setEnabled(enabled)
 
     def close(self):
+        for notifier in (self.reader, self.writer):
+            if notifier is not None:
+                notifier.setEnabled(False)
+                # Deferred deletion: close() may run inside the notifier's own slot.
+                notifier.deleteLater()
+        self.reader = self.writer = None
+        self.parser = RequestParser()
+        self.writeBuff, self.writeOffset = b'', 0
         if self.sock is not None:
             self.sock.close()
             self.sock = None
-        self.readBuff = self.writeBuff = b''
+            if self.onClose is not None:
+                self.onClose(self)
 
     def parseRequest(self, data):
-        parts = data.split(b'\r\n\r\n', 1)
-        if len(parts[0]) > 65536:
-            raise ValueError('Headers too large')
-        if len(parts) == 1:
-            return None, 0
-        lines = parts[0].split(b'\r\n')
-        method, path, version = lines[0].split(b' ')
-        if version not in (b'HTTP/1.0', b'HTTP/1.1'):
-            raise ValueError('Unsupported HTTP version')
-        headers = {}
-        for line in lines[1:]:
-            key, value = line.split(b':', 1)
-            key = key.strip().lower()
-            value = value.strip()
-            if key in headers:
-                # Connection is a list field; older proxies may emit both
-                # close and keep-alive. Every reply still closes this socket.
-                if key != b'connection':
-                    raise ValueError('Duplicate header')
-                headers[key] += b', ' + value
-            else:
-                headers[key] = value
-        if b'transfer-encoding' in headers:
-            raise ValueError('Chunked requests unsupported')
-        size = int(headers.get(b'content-length', b'0'))
-        if size > SCHEMA['x-limits']['maxRequestBytes']:
-            raise HttpError('413 Payload Too Large')
-        if size < 0:
-            raise ValueError('Invalid body length')
-        offset = len(parts[0]) + 4
-        if len(data) < offset + size:
-            return None, 0
-        return WebRequest(method.upper(), headers, data[offset:offset + size], path), offset + size
+        parser = RequestParser()
+        req = parser.feed(data)
+        return (req, parser.end) if req is not None else (None, 0)
 
 
 class WebServer:
     def __init__(self, handler, rpc_handler=None):
         self.handler, self.rpc_handler = handler, rpc_handler
         self.clients, self.sock = [], None
+        self.listener = None
+        self.notifier = None
+        # Called on Qt's thread when the last open connection closes.
+        self.onIdle = None
 
     def advance(self):
+        """Housekeeping and fallback I/O: accept, progress and time out clients."""
         if self.sock is not None:
             self.acceptClients()
             self.advanceClients()
 
-    def acceptClients(self):
-        if not select.select([self.sock], [], [], 0)[0]:
-            return
-        sock = self.sock.accept()[0]
-        sock.setblocking(False)
-        self.clients.append(WebClient(sock, self.handlerWrapper))
+    def acceptClients(self, *_):
+        while self.sock is not None:
+            try:
+                sock = self.sock.accept()[0]
+            except OSError:  # Includes BlockingIOError when the backlog is empty.
+                return
+            sock.setblocking(False)
+            client = WebClient(sock, self.handlerWrapper, self.notifier, self.removeClient)
+            self.clients.append(client)
+            if client.reader is not None:
+                client.read()  # The request may already be queued before the notifier arms.
 
     def advanceClients(self):
-        self.clients = [client for client in self.clients if client.advance()]
+        for client in list(self.clients):
+            if not client.advance():
+                self.removeClient(client)
 
-    def listen(self):
+    def removeClient(self, client):
+        if client in self.clients:
+            self.clients.remove(client)
+            if not self.clients and self.onIdle is not None:
+                self.onIdle()
+
+    def listen(self, notifier_class=None):
+        """Bind the listener. With a QSocketNotifier class, socket readiness drives
+        all I/O; otherwise callers must drive advance() themselves."""
         self.close()
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.setblocking(False)
         self.sock.bind((util.setting('webBindAddress'), util.setting('webBindPort')))
         self.sock.listen(util.setting('webBacklog'))
+        if notifier_class is not None:
+            kinds = {'read': notifier_class.Type.Read, 'write': notifier_class.Type.Write}
+            listener = self.listener = notifier_class(self.sock.fileno(), notifier_class.Type.Read)
+            listener.activated.connect(self.acceptClients)
+            def notifier(fileno, kind, slot):
+                # Parented to the listener so Qt owns it: deleteLater() stays safe
+                # even when the last Python reference disappears inside its slot.
+                watcher = notifier_class(fileno, kinds[kind], listener)
+                watcher.activated.connect(slot)
+                return watcher
+            self.notifier = notifier
 
     def handlerWrapper(self, req):
         allowed, origin = self.allowOrigin(req)
@@ -182,7 +293,9 @@ class WebServer:
             if not rpc:
                 from .legacy import legacy_request
                 params = legacy_request(params)
-                jsonschema.validate(params, request_schema)
+                error = jsonschema.exceptions.best_match(request_validator.iter_errors(params))
+                if error is not None:
+                    raise error
         except (ValueError, UnicodeError, jsonschema.ValidationError, ApiError) as error:
             if not allowed:
                 return response(None, '403 Forbidden', empty=True)
@@ -236,12 +349,18 @@ class WebServer:
         return ''.join(key + (': ' + value if value is not None else '') + '\r\n' for key, value in headers).encode() + b'\r\n' + body
 
     def close(self):
+        clients, self.clients = self.clients, []
+        for client in clients:
+            client.onClose = None
+            client.close()
+        if self.listener is not None:
+            self.listener.setEnabled(False)
+            self.listener.deleteLater()
+            self.listener = None
+        self.notifier = None
         if self.sock is not None:
             self.sock.close()
             self.sock = None
-        for client in self.clients:
-            client.close()
-        self.clients = []
 
 
 def format_success_reply(api_version, result):
@@ -266,3 +385,7 @@ request_schema = {
     },
     "required": ["action"],
 }
+
+# jsonschema.validate() rechecks the schema on every call. Reuse one validator
+# with the same best-match error selection, so error messages are unchanged.
+request_validator = jsonschema.validators.validator_for(request_schema)(request_schema)

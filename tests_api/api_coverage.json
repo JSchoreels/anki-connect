@@ -2099,6 +2099,150 @@
         "addTags"
       ],
       "notes": "Disposable profiles exercise the custom Show card editor, classic browser and Svelte browser. Pending fields survive mining media/tag updates and v1 patches; a subsequent editor save and close retain the API media and fields."
+    },
+    {
+      "source": "tests_api/test_legacy_projections.py",
+      "case": "test_notes_info_matches_notes_get_with_missing_duplicate_and_string_ids",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [
+        "notes.get"
+      ],
+      "legacy": [
+        "notesInfo"
+      ],
+      "notes": "Version-6 HTTP requests against a real collection compare direct legacy note projections field by field with notes.get, including missing IDs as empty objects, duplicates, string IDs and request order."
+    },
+    {
+      "source": "tests_api/test_legacy_projections.py",
+      "case": "test_invalid_projection_ids_keep_invalid_params_error",
+      "layer": "controlled-admission",
+      "outcome": "failure",
+      "v1": [],
+      "legacy": [
+        "notesInfo",
+        "cardsInfo"
+      ],
+      "notes": "Non-numeric, zero, negative, out-of-range, boolean and fractional IDs keep the invalid-ID error on the direct projection paths."
+    },
+    {
+      "source": "tests_api/test_legacy_projections.py",
+      "case": "test_cards_info_render_and_next_reviews_match_v1_services",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [
+        "cards.render",
+        "scheduling.predict"
+      ],
+      "legacy": [
+        "cardsInfo"
+      ],
+      "notes": "Direct card projections match native cards.render HTML and CSS, scheduling.predict answer labels on new and reviewed cards, deck and note type names, missing and duplicate IDs, and requested field subsets."
+    },
+    {
+      "source": "tests_api/test_legacy_projections.py",
+      "case": "test_find_notes_and_cards_match_every_v1_page",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [
+        "notes.search",
+        "cards.search"
+      ],
+      "legacy": [
+        "findNotes",
+        "findCards",
+        "notesInfo"
+      ],
+      "notes": "Single native legacy searches return exactly the concatenated v1 cursor pages for several queries, keep invalid-search errors, and agree with notesInfo by query."
+    },
+    {
+      "source": "tests_api/test_legacy_projections.py",
+      "case": "test_cursor_pages_drop_deleted_entities_in_order",
+      "layer": "native-service",
+      "outcome": "success",
+      "v1": [
+        "notes.search",
+        "cards.search"
+      ],
+      "legacy": [],
+      "notes": "Later cursor pages remove notes and cards deleted after the snapshot with one batched existence query, preserving order."
+    },
+    {
+      "source": "tests_api/test_legacy_add.py",
+      "case": "test_add_notes_checks_each_note_natively_once",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "addNotes"
+      ],
+      "notes": "Version-6 HTTP adds against a real collection run Anki native field validation exactly once per note across the preflight, validateMany and atomic createMany, and persist every note."
+    },
+    {
+      "source": "tests_api/test_legacy_add.py",
+      "case": "test_batch_duplicates_are_detected_by_normalized_first_field",
+      "layer": "controlled-admission",
+      "outcome": "failure",
+      "v1": [],
+      "legacy": [
+        "addNotes"
+      ],
+      "notes": "Large batches reject HTML-normalized in-batch duplicates and Cloze validation failures without writing, while deck-scoped and allowed duplicates are still added."
+    },
+    {
+      "source": "tests_api/test_legacy_add.py",
+      "case": "test_media_free_add_creates_no_journal_but_still_recovers",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "addNote"
+      ],
+      "notes": "Adds without media create no media journal, still restore an interrupted unreferenced replacement first, and still refuse to write while a conflicting journal needs recovery."
+    },
+    {
+      "source": "tests_api/test_legacy_projections.py",
+      "case": "test_get_decks_groups_current_decks_without_scheduling_reads",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "getDecks"
+      ],
+      "notes": "Batched native card reads group duplicates by current deck, including a relearning card in a filtered deck whose negative due previously broke the projection, and keep the missing-card error."
+    },
+    {
+      "source": "tests_api/test_legacy_projections.py",
+      "case": "test_cards_to_notes_skips_missing_cards_and_keeps_first_order",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "cardsToNotes"
+      ],
+      "notes": "Batched native card reads skip missing cards, deduplicate note IDs in first-occurrence order, include filtered learning cards, and keep the invalid-ID error."
+    },
+    {
+      "source": "tests_api/test_legacy_projections.py",
+      "case": "test_store_media_names_renames_and_rollback_journal",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "storeMediaFile"
+      ],
+      "notes": "Plain and native-normalized names store, reuse identical content, rename conflicting content without touching the original, and leave no journal entries."
+    },
+    {
+      "source": "tests_api/test_legacy_projections.py",
+      "case": "test_literal_media_patterns_match_the_full_listing",
+      "layer": "controlled-admission",
+      "outcome": "success",
+      "v1": [],
+      "legacy": [
+        "getMediaFilesNames"
+      ],
+      "notes": "Literal and wildcard patterns, including other-case, Unicode, bracket and directory names, equal the full case-sensitive folder listing; absent literal names never list the folder."
     }
   ],
   "unreferenced": {

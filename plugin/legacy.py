@@ -47,6 +47,9 @@ class Legacy:
         self.owner, self.runtime = owner, owner.runtime
         self.service = service
         self.media_transaction = None
+        # Read-only projection lookups, valid for this request only.
+        self.projection_models = {}
+        self.projection_decks = {}
 
     @staticmethod
     def boolean(value, default, label):
@@ -66,6 +69,8 @@ class Legacy:
 
     @staticmethod
     def identifier(value):
+        if type(value) is int and 0 < value <= 9223372036854775807:
+            return value  # The common case; entity_id accepts exactly this range.
         value = integer(value)
         # Queries and direct native calls also consume legacy IDs, so validate
         # before constructing a search or allowing Qt guards to inspect them.
@@ -179,11 +184,13 @@ class Legacy:
         return list(dict.fromkeys(actual for field in cls.array(entry.get('fields'))
                                   if (actual := cls.field_name(field, fields)) is not None))
 
-    def s(self, method, **params):
+    def s(self, method, validated=False, **params):
         if self.service is None:
             self.service = self.runtime.service()
+        dispatcher = self.runtime.dispatcher
         try:
-            return self.service.execute(method, self.runtime.dispatcher.params(method, params))
+            return self.service.execute(method, dispatcher.with_defaults(method, params) if validated
+                                        else dispatcher.params(method, params))
         except ApiError as error:
             if error.kind == 'notFound':
                 # Resolve only on failure, so a missing entity keeps its legacy
@@ -204,8 +211,10 @@ class Legacy:
                 raise ApiError(error.kind, 'Model name already exists', error.details) from error
             raise
 
-    def resolve(self, reference, kind):
+    def resolve(self, reference, kind, read_only=False):
         try:
+            if read_only:
+                return self.service.resolved(reference, kind)
             return self.service.resolve(reference, kind)
         except ApiError as error:
             if error.kind == 'notFound':
@@ -257,6 +266,16 @@ class Legacy:
         return values
 
     def all_pages(self, method, **params):
+        if method in ('notes.search', 'cards.search') and set(params) == {'query'}:
+            # Legacy searches consume every page at once; read the native result
+            # directly instead of paging a snapshot. Validation errors are unchanged.
+            self.runtime.dispatcher.params(method, params)
+            if self.service is None:
+                self.service = self.runtime.service()
+            ids = self.service.search_ids(method.split('.')[0], params['query'])
+            if len(ids) > 1000000:
+                raise ApiError('busy', 'Search snapshot capacity exceeded.')
+            return ids
         result, cursor = [], None
         while True:
             page = self.s(method, **params, **({'cursor': cursor} if cursor else {}))
@@ -283,8 +302,10 @@ class Legacy:
 
     def created_note(self, source, pure=False):
         source = self.normalize_note(source)
-        model = self.model(source['modelName'])
-        self.resolve(self.ref(source['deckName']), 'deck')
+        if self.service is None:
+            self.service = self.runtime.service()
+        model = self.resolve(self.ref(source['modelName']), 'noteType', read_only=True)
+        self.resolve(self.ref(source['deckName']), 'deck', read_only=True)
         # Native notes have every model field, including omitted media targets.
         fields = {field['name']: '' for field in model['flds']}
         fields.update(self.fields(source.get('fields'), fields))
@@ -392,6 +413,32 @@ class Legacy:
             self.attachments(fields, source)
         return self.runtime.background(prepare, expected=session)
 
+    def add_legacy(self, name, p):
+        if name == 'addNotes':
+            prepared, indices, errors = [], [], {}
+            for index, source in enumerate(p['notes']):
+                try:
+                    prepared.append(self.created_note(source, pure=True))
+                    indices.append(index)
+                except Exception as error:
+                    errors[index] = str(error)
+            _, failures = self.service.prepare_notes(prepared)
+            for failure in failures:
+                errors[indices[failure['index']]] = self.validation_error({'items': [failure]}) or failure['error']['message']
+            if errors:
+                raise ApiError('validationFailed', str([errors[index] for index in sorted(errors)]), {'items': failures})
+        try:
+            values = self.add_notes(p.get('notes', [p.get('note')]), True)
+        except Exception as error:
+            if name == 'addNotes':
+                items = error.details.get('items', []) if isinstance(error, ApiError) and error.details else []
+                errors = [self.validation_error({'items': [item]}) or item.get('error', {}).get('message', str(error))
+                          for item in items]
+                raise ApiError(getattr(error, 'kind', 'internalError'), str(errors or [str(error)]),
+                               getattr(error, 'details', None)) from error
+            raise
+        return values if name == 'addNotes' else values[0]
+
     def validate(self, source):
         try:
             result = self.s('notes.validate', note=self.created_note(source, pure=True))
@@ -426,7 +473,13 @@ class Legacy:
                         continue
                     staged.append((entry, filename, data))
         from .media import MediaTransaction
-        transaction = MediaTransaction(self.service)
+        if staged:
+            transaction = MediaTransaction(self.service)
+        else:
+            # Nothing to install or roll back: skip the journal, but still refuse
+            # to write while an interrupted replacement awaits recovery.
+            MediaTransaction.recover(self.service)
+            transaction = None
         filenames = {}
         try:
             for entry, filename, data in staged:
@@ -450,20 +503,86 @@ class Legacy:
                         content = '<img src="' + filename + '">' if kind == 'picture' else '[sound:' + filename + ']'
                         for field in self.media_targets(entry, data['fields']):
                             data['fields'][field] += content
-            values = self.unwrap(self.s('notes.createMany', notes=prepared, atomic=atomic))
-            transaction.commit()
+            # The notes passed the identical NoteInput schema in validateMany;
+            # since then only media markup was appended to string field values.
+            values = self.unwrap(self.s('notes.createMany', validated=True, notes=prepared, atomic=atomic))
+            if transaction:
+                transaction.commit()
             return [int(value['noteId']) for value in values]
         except Exception as error:
-            if transaction.committed:
+            if transaction is None or transaction.committed:
                 raise
             failures = transaction.rollback()
             if failures:
                 raise ApiError('ioError', 'Media restoration failed.', {'failures': failures, 'cause': str(error)}) from error
             raise
 
+    def projection_model(self, id):
+        """Note type for read-only projections: Anki's cached dict, looked up once
+        per request instead of a deep copy per item."""
+        model = self.projection_models.get(id)
+        if model is None:
+            model = self.service.col.models.get(id)
+            if model is None:
+                model = self.model(id=id)  # Raises the legacy not-found error.
+            self.projection_models[id] = model
+        return model
+
+    def projection_deck_name(self, id):
+        name = self.projection_decks.get(id)
+        if name is None:
+            deck = self.service.col.decks.get(id, default=False)  # Missing: resolve raises.
+            name = deck['name'] if deck else self.resolve({'id': str(id)}, 'deck')['name']
+            self.projection_decks[id] = name
+        return name
+
+    def card_rows(self, ids):
+        """Existing cards' (note, deck, original deck) by ID, one query per 1000."""
+        if self.service is None:
+            self.service = self.runtime.service()
+        unique, rows = list(dict.fromkeys(ids)), {}
+        for start in range(0, len(unique), 1000):
+            chunk = unique[start:start + 1000]
+            for id, nid, did, odid in self.service.col.db.all(
+                    'select id, nid, did, odid from cards where id in ({})'.format(','.join('?' * len(chunk))), *chunk):
+                rows[id] = (nid, did, odid)
+        return rows
+
+    def card_deck_name(self, row):
+        """Current deck name, or None when the card, its deck or its home deck is
+        missing (cards.get then fails with notFound)."""
+        if row is None:
+            return None
+        _, did, odid = row
+        names = self.projection_decks
+        for id in (did, odid) if odid else (did,):
+            if id not in names:
+                deck = self.service.col.decks.get(id, default=False)
+                names[id] = deck['name'] if deck else None
+            if names[id] is None:
+                return None
+        return names[did]
+
     def record(self, kind, id, fields=None):
         if kind == 'cards':
             return self.card_info(id, fields)
+        if self.service is None:
+            self.service = self.runtime.service()
+        if type(id) is int and 0 < id <= 9223372036854775807:
+            native_id = id  # Already validated by the legacy identifier normalizer.
+        else:
+            try:
+                native_id = entity_id(str(id))
+            except ApiError:
+                native_id = None
+        if native_id is not None:
+            # Same projection as notes.get, read natively; a missing note raises
+            # NotFoundError, which callers map exactly as before.
+            note = self.service.col.get_note(native_id)
+            model = self.projection_model(note.mid)
+            return {'noteId': int(id), 'profile': self.runtime.profile_name, 'tags': list(note.tags),
+                    'fields': {field['name']: {'value': note.fields[index], 'order': index} for index, field in enumerate(model['flds'])},
+                    'modelName': model['name'], 'mod': note.mod, 'cards': note.card_ids()}
         value = self.s(kind + '.get', id=str(id))
         model = self.model(id=value['noteType']['id'])
         return {'noteId': int(id), 'profile': self.runtime.profile_name, 'tags': value['tags'],
@@ -482,7 +601,7 @@ class Legacy:
         requested = None if fields is None else set(fields)
         if requested is None or requested & {'fields', 'modelName', 'css'}:
             note = card.note()
-            model = self.model(id=note.mid)
+            model = self.projection_model(note.mid)
             if requested is None or 'fields' in requested:
                 result['fields'] = {field['name']: {'value': note.fields[index], 'order': index} for index, field in enumerate(model['flds'])}
             if requested is None or 'modelName' in requested:
@@ -490,13 +609,12 @@ class Legacy:
             if requested is None or 'css' in requested:
                 result['css'] = model['css']
         if requested is None or 'deckName' in requested:
-            result['deckName'] = self.resolve({'id': str(card.did)}, 'deck')['name']
+            result['deckName'] = self.projection_deck_name(card.did)
         if requested is None or requested & {'question', 'answer'}:
-            rendered = self.s('cards.render', id=str(id))
-            result.update(question=rendered['questionHtml'], answer=rendered['answerHtml'])
+            # One native render shared by question and answer, as in cards.render.
+            result.update(question=card.question(), answer=card.answer())
         if requested is None or 'nextReviews' in requested:
-            prediction = self.s('scheduling.predict', cardId=str(id))
-            result['nextReviews'] = [item['label'] for item in prediction['answers']]
+            result['nextReviews'] = self.service.next_state_labels(card)
         return result if requested is None else {key: value for key, value in result.items() if key in requested}
 
     def gui_call(self, name, p, draft_fields=None):
@@ -749,10 +867,13 @@ class Legacy:
         if name == 'createDeck':
             return int(self.s('decks.create', name=p['deck'])['id'])
         if name == 'getDecks':
-            result = {}
+            rows, result = self.card_rows(p['cards']), {}
             for id in p['cards']:
-                card = self.s('cards.get', id=str(id))
-                result.setdefault(card['deck']['name'], []).append(id)
+                deck = self.card_deck_name(rows.get(id))
+                if deck is None:
+                    # Missing card or deck: the v1 read raises the historical error.
+                    deck = self.s('cards.get', id=str(id))['deck']['name']
+                result.setdefault(deck, []).append(id)
             return result
         if name == 'changeDeck':
             target = self.s('decks.create', name=p['deck'])
@@ -819,35 +940,21 @@ class Legacy:
             return self.s('media.getDirectory')['path']
         if name in ('canAddNote', 'canAddNoteWithErrorDetail', 'canAddNotes', 'canAddNotesWithErrorDetail'):
             sources = p.get('notes', [p.get('note')])
-            result = [self.validate(source) for source in sources]
+            if self.service is None:
+                self.service = self.runtime.service()
+            # Read-only: each note type, deck and identical note is checked once.
+            with self.service.validation_scope():
+                result = [self.validate(source) for source in sources]
             if not name.endswith('WithErrorDetail'):
                 result = [item['canAdd'] for item in result]
             return result if name.startswith('canAddNotes') else result[0]
         if name in ('addNote', 'addNotes'):
-            if name == 'addNotes':
-                prepared, indices, errors = [], [], {}
-                for index, source in enumerate(p['notes']):
-                    try:
-                        prepared.append(self.created_note(source, pure=True))
-                        indices.append(index)
-                    except Exception as error:
-                        errors[index] = str(error)
-                _, failures = self.service.prepare_notes(prepared)
-                for failure in failures:
-                    errors[indices[failure['index']]] = self.validation_error({'items': [failure]}) or failure['error']['message']
-                if errors:
-                    raise ApiError('validationFailed', str([errors[index] for index in sorted(errors)]), {'items': failures})
-            try:
-                values = self.add_notes(p.get('notes', [p.get('note')]), True)
-            except Exception as error:
-                if name == 'addNotes':
-                    items = error.details.get('items', []) if isinstance(error, ApiError) and error.details else []
-                    errors = [self.validation_error({'items': [item]}) or item.get('error', {}).get('message', str(error))
-                              for item in items]
-                    raise ApiError(getattr(error, 'kind', 'internalError'), str(errors or [str(error)]),
-                                   getattr(error, 'details', None)) from error
-                raise
-            return values if name == 'addNotes' else values[0]
+            if self.service is None:
+                self.service = self.runtime.service()
+            # The preflight, validateMany and atomic createMany validate the same
+            # notes with no note writes in between; check each one natively once.
+            with self.service.validation_scope():
+                return self.add_legacy(name, p)
         if name in ('updateNote', 'updateNoteFields', 'updateNoteTags'):
             source = p['note']
             source = {'id': source, 'tags': p['tags']} if name == 'updateNoteTags' else copy.deepcopy(source)
@@ -938,7 +1045,8 @@ class Legacy:
                     not p['fields'] or any(isinstance(field, str) and field.startswith('prop:') for field in p['fields']))):
             return ExtendedCards(self.service).cardsInfo(**p)
         if name in ('findNotes', 'findCards'):
-            return [] if p['query'] is None else [int(id) for id in self.all_pages('notes.search' if name == 'findNotes' else 'cards.search', query=p['query'])]
+            # Search results are already native int IDs in result order.
+            return [] if p['query'] is None else self.all_pages('notes.search' if name == 'findNotes' else 'cards.search', query=p['query'])
         if name in ('notesInfo', 'cardsInfo', 'notesModTime', 'cardsModTime'):
             fields = p.get('fields') if name == 'cardsInfo' else None
             if fields is not None and (not isinstance(fields, list) or not all(isinstance(field, str) for field in fields)):
@@ -970,8 +1078,10 @@ class Legacy:
         if name == 'removeEmptyNotes':
             raise ApiError('compatibilityError', 'Use notes.findEmpty with explicit criteria, then notes.delete.')
         if name == 'cardsToNotes':
-            values = self.unwrap(self.s('cards.getMany', ids=self.ids(p['cards'])), missing=True)
-            return list(dict.fromkeys(int(value['noteId']) for value in values if value))
+            # As with cards.getMany, cards that are missing (or whose decks are)
+            # are skipped; note IDs keep first-occurrence order.
+            rows = self.card_rows(p['cards'])
+            return list(dict.fromkeys(rows[id][0] for id in p['cards'] if self.card_deck_name(rows.get(id)) is not None))
         if name in ('suspend', 'unsuspend'):
             for id in p['cards']:
                 self.s('cards.get', id=str(id))

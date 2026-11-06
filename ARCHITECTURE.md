@@ -22,9 +22,19 @@ default. The canonical contract is [API_V1.md](API_V1.md) and
 ## Execution and completion
 
 Add-on startup registers the custom editor and unload hooks, opens optional
-metadata logging, and starts a retained Qt timer. Importing as `plugin` in tests
-skips automatic startup. The timer advances socket reads/writes without blocking
-on API completion. Each connection closes after its reply drains.
+metadata logging, and starts the listener. Importing as `plugin` in tests skips
+automatic startup. Qt socket notifiers on Qt's main thread accept connections
+and read each socket until it would block; request headers are parsed once and
+the body accumulates in one buffer. The reply is written as soon as its
+completion resolves, and a write notifier resumes only partial writes. A
+retained low-frequency timer (`apiPollInterval`, default 1000 ms) enforces the
+10-second idle timeout and also advances sockets as a fallback; it does not
+gate request latency. Each connection closes after its reply drains, and the
+exit check runs when the last connection closes.
+
+Legacy envelope validation and operation-result validation reuse cached
+validators. Parameter preparation copies only the top-level object and schema
+defaults; services treat nested request values as read-only.
 
 Repeated `Connection` headers are combined as a list for compatibility with older
 HTTP proxies. Other duplicate headers remain rejected, including `Content-Length`,
@@ -45,6 +55,14 @@ serialized collection access and background-operation lifecycle counter. File
 reads/downloads use background tasks without collection access. Completion callbacks
 publish native changes through `on_op_finished` before resolving API replies.
 Failed operations also publish changes from successful prefixes.
+
+The open Browser stops fetching rows while a background operation runs and
+redraws every cell when the last one ends, which on Windows waits for the next
+frame (about 12 ms per request). While a Browser is open, a finished request
+therefore keeps its operation for 50 ms, and a request admitted in that window
+inherits it, so a burst redraws once at its end. Busy checks do not count the
+lingering hold; GUI actions, lifecycle checks and session changes end it at once,
+and a burst older than 0.5 s releases it so the Browser still refreshes.
 
 ```mermaid
 flowchart LR
