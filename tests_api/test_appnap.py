@@ -11,7 +11,9 @@ from plugin import AnkiConnect
 def startup(monkeypatch):
     events = []
     owner = AnkiConnect()
-    monkeypatch.setattr(owner.server, 'listen', lambda: events.append('listen'))
+    # Startup must arm event-driven socket notifiers, not only the timer.
+    monkeypatch.setattr(owner.server, 'listen', lambda notifier_class:
+                        events.append('listen' if notifier_class is plugin.QSocketNotifier else notifier_class))
     monkeypatch.setattr(plugin.util, 'setting', lambda key: 25)
     monkeypatch.setattr(plugin, 'QTimer', lambda: SimpleNamespace(
         timeout=SimpleNamespace(connect=lambda callback: events.append('connect')),
@@ -42,7 +44,7 @@ def test_startup_without_macos_helper(startup, monkeypatch):
 def test_failed_listener_does_not_suppress_appnap(startup, monkeypatch):
     owner, events = startup
 
-    def fail():
+    def fail(*args):
         raise OSError('address already in use')
 
     monkeypatch.setattr(owner.server, 'listen', fail)
@@ -57,7 +59,7 @@ def test_failed_listener_does_not_suppress_appnap(startup, monkeypatch):
 def test_helper_failure_keeps_listener_running(startup, monkeypatch, capsys):
     owner, events = startup
 
-    def fail():
+    def fail(*args):
         raise RuntimeError('native helper unavailable')
 
     monkeypatch.setattr(plugin, 'macos_helper', SimpleNamespace(disable_appnap=fail))

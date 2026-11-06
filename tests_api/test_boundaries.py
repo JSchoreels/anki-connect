@@ -124,7 +124,8 @@ def test_http_idle_timeout_tracks_progress_and_waits_for_accepted_work(monkeypat
         assert client.pending
         now[0] = 1000
         with monkeypatch.context() as waiting:
-            waiting.setattr(web.select, 'select', lambda *args: pytest.fail('Pending work must not poll sockets.'))
+            for name in ('read', 'flush'):
+                waiting.setattr(client, name, lambda *args, **kwargs: pytest.fail('Pending work must not poll sockets.'))
             assert client.advance()  # Accepted work has no implicit deadline.
         pending.resolve(b'HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n')
         now[0] = 1001
@@ -145,9 +146,16 @@ def test_http_stalled_response_times_out(monkeypatch):
     # Limit each native write: Windows may buffer the whole response despite
     # SO_SNDBUF, so the buffer size alone cannot guarantee a pending reply.
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 4096)
+    # The transport writes until the socket would block, so stall explicitly
+    # after a few partial writes to model a peer that stopped reading.
+    sends = [0]
+    def send(data):
+        sends[0] += 1
+        if sends[0] > 3:
+            raise BlockingIOError
+        return server_socket.send(data[:4096])
     transport = SimpleNamespace(fileno=server_socket.fileno, recv=server_socket.recv,
-                                send=lambda data: server_socket.send(data[:4096]),
-                                close=server_socket.close)
+                                send=send, close=server_socket.close)
     client = web.WebClient(transport, lambda request: completed(b'x' * 1048576))
     try:
         peer.sendall(b'POST / HTTP/1.1\r\nContent-Length: 0\r\n\r\n')

@@ -113,8 +113,8 @@ class Runtime:
 
     def token(self, kind, value):
         if len(self.tokens) >= 1000:
-            oldest = min(self.tokens, key=lambda key: self.tokens[key][3])
-            self.tokens.pop(oldest)
+            # Tokens are never reinserted, so dict order is creation order.
+            self.tokens.pop(next(iter(self.tokens)))
         key = uuid.uuid4().hex
         digest = hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
         self.tokens[key] = (kind, digest, self._session, time.monotonic())
@@ -151,10 +151,13 @@ class Runtime:
             self.cursors[next_cursor] = {**state, 'offset': next_offset}
         else:
             next_cursor = None
-        if method == 'notes.search' or method == 'notes.findEmpty':
-            selected = [id for id in selected if self._collection.db.scalar('select 1 from notes where id=?', id)]
-        elif method == 'cards.search':
-            selected = [id for id in selected if self._collection.db.scalar('select 1 from cards where id=?', id)]
+        # A fresh search snapshot is current; later cursor pages drop entities
+        # deleted since the snapshot, with one query per page (limit <= 1000).
+        table = {'notes.search': 'notes', 'notes.findEmpty': 'notes', 'cards.search': 'cards'}.get(method)
+        if cursor and table and selected:
+            present = set(self._collection.db.list(
+                'select id from {} where id in ({})'.format(table, ','.join('?' * len(selected))), *selected))
+            selected = [id for id in selected if id in present]
         return {'ids': [str(id) for id in selected], 'nextCursor': next_cursor}
 
     def capability_reason(self, method):

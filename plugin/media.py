@@ -1,11 +1,19 @@
 """Recoverable, request-owned media replacements for both API transports."""
 import hashlib
 import json
+import os
+import re
 import shutil
 import uuid
 from pathlib import Path
 
 from .protocol import ApiError
+
+
+# Names Anki's media writer stores unchanged: no normalization, length limit or
+# Windows device name applies. Anything else lists the folder to detect renames.
+PLAIN_MEDIA_NAME = re.compile(r'[A-Za-z0-9][A-Za-z0-9_-]{0,63}(\.[A-Za-z0-9]{1,8})?')
+WINDOWS_DEVICES = {'CON', 'PRN', 'AUX', 'NUL', *('COM%d' % n for n in range(10)), *('LPT%d' % n for n in range(10))}
 
 
 class MediaTransaction:
@@ -47,12 +55,22 @@ class MediaTransaction:
             self.entries[filename]['sha256'] = hashlib.sha256(data).hexdigest()
         # Journal the original before the native manager moves it to trash.
         self.persist()
-        existing_names = {path.name for path in self.media.iterdir()}
+        # A new plain name is stored as-is, so only a rename needs the prior listing.
+        if (target.is_file() or not PLAIN_MEDIA_NAME.fullmatch(filename)
+                or filename.split('.')[0].upper() in WINDOWS_DEVICES):
+            existing_names = set(os.listdir(self.media))
+        else:
+            existing_names = None
         actual = self.service._store_bytes(filename, data, collision)['filename']
         if actual != filename:
             entry = self.entries.pop(filename)
             backup = None
-            if actual in existing_names:
+            if existing_names is None:
+                # Unexpected rename: keep any same-named file conservatively.
+                existed = (self.media / actual).is_file() and (self.media / actual).read_bytes() == data
+            else:
+                existed = actual in existing_names
+            if existed:
                 backup = uuid.uuid4().hex
                 (self.path / backup).write_bytes((self.media / actual).read_bytes())
             self.entries[actual] = {'backup': backup, 'sha256': entry['sha256']}

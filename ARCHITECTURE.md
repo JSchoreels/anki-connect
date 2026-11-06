@@ -22,9 +22,19 @@ default. The canonical contract is [API_V1.md](API_V1.md) and
 ## Execution and completion
 
 Add-on startup registers the custom editor and unload hooks, opens optional
-metadata logging, and starts a retained Qt timer. Importing as `plugin` in tests
-skips automatic startup. The timer advances socket reads/writes without blocking
-on API completion. Each connection closes after its reply drains.
+metadata logging, and starts the listener. Importing as `plugin` in tests skips
+automatic startup. Qt socket notifiers on Qt's main thread accept connections
+and read each socket until it would block; request headers are parsed once and
+the body accumulates in one buffer. The reply is written as soon as its
+completion resolves, and a write notifier resumes only partial writes. A
+retained low-frequency timer (`apiPollInterval`, default 1000 ms) enforces the
+10-second idle timeout and also advances sockets as a fallback; it does not
+gate request latency. Each connection closes after its reply drains, and the
+exit check runs when the last connection closes.
+
+Legacy envelope validation and operation-result validation reuse cached
+validators. Parameter preparation copies only the top-level object and schema
+defaults; services treat nested request values as read-only.
 
 Repeated `Connection` headers are combined as a list for compatibility with older
 HTTP proxies. Other duplicate headers remain rejected, including `Content-Length`,

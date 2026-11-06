@@ -12,6 +12,20 @@ def timestamp(seconds=None):
         timespec='milliseconds').replace('+00:00', 'Z')
 
 
+_result_validators = {}
+
+
+def result_validator(method):
+    """Return the cached final-result validator for an operation method."""
+    validator = _result_validators.get(method)
+    if validator is None:
+        from jsonschema import Draft202012Validator
+        meta = SCHEMA['x-methods'][method]
+        schema = meta.get('operationResult', meta['result'])
+        validator = _result_validators[method] = Draft202012Validator({**SCHEMA, 'oneOf': [schema]})
+    return validator
+
+
 class ApiError(Exception):
     def __init__(self, kind, message, details=None):
         super().__init__(message)
@@ -128,10 +142,7 @@ class Operations:
         future = self.completions[key] = Deferred()
         def finish(source):
             if not source.error and method in SCHEMA['x-methods']:
-                from jsonschema import Draft202012Validator
-                meta = SCHEMA['x-methods'][method]
-                schema = meta.get('operationResult', meta['result'])
-                if not Draft202012Validator({**SCHEMA, 'oneOf': [schema]}).is_valid(source.value):
+                if not result_validator(method).is_valid(source.value):
                     source = completed(error=ApiError('internalError', 'Operation produced an invalid result.'))
             record = self.records[key]
             record.update(updatedAt=timestamp(self.now()), cancellable=False)
@@ -182,6 +193,11 @@ class Dispatcher:
         self.runtime = runtime
         self.validators = {name: Draft202012Validator({**SCHEMA, 'oneOf': [meta['params']]})
                            for name, meta in SCHEMA['x-methods'].items()}
+        self.defaults = {}
+        for name, meta in SCHEMA['x-methods'].items():
+            definition = SCHEMA['$defs'][meta['params']['$ref'].split('/')[-1]]
+            self.defaults[name] = [(key, value['default']) for key, value in definition['properties'].items()
+                                   if 'default' in value]
 
     def params(self, method, params):
         if method not in self.validators:
@@ -190,11 +206,16 @@ class Dispatcher:
         if errors:
             raise ApiError('invalidParams', errors[0].message,
                            {'path': '/' + '/'.join(str(part) for part in errors[0].path)})
-        result = copy.deepcopy(params)
-        definition = SCHEMA['$defs'][SCHEMA['x-methods'][method]['params']['$ref'].split('/')[-1]]
-        for key, value in definition['properties'].items():
-            if key not in result and 'default' in value:
-                result[key] = copy.deepcopy(value['default'])
+        return self.with_defaults(method, params)
+
+    def with_defaults(self, method, params):
+        """Top-level defaults for parameters that already passed this schema."""
+        # Services treat parameters as read-only; only top-level keys are added
+        # or removed, so a shallow copy protects the caller's request object.
+        result = dict(params)
+        for key, default in self.defaults[method]:
+            if key not in result:
+                result[key] = copy.deepcopy(default)
         return result
 
     def invoke(self, method, params):
